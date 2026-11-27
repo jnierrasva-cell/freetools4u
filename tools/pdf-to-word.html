@@ -14,10 +14,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Libraries: pdf.js (text extraction) + docx (Word generation) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/index.umd.js"></script>
-
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -199,9 +195,9 @@
         </div>
 
         <div class="note">
-          <strong>How it works:</strong> Your PDF is processed entirely in your browser — nothing is uploaded to a server.
-          This tool extracts text content into a Word document. Complex layouts, images, and tables may not be preserved
-          perfectly in this browser-based version.
+          <strong>How it works:</strong> Your PDF is securely uploaded to our processing server, which uses advanced
+          conversion technology to retain the original layout, images, and tables. Once the Word document is ready,
+          it is immediately downloaded to your device. We do not store your files.
         </div>
       </div>
 
@@ -221,23 +217,22 @@
   </footer>
 
   <script>
-    // ===== pdf.js worker =====
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    // ===== Config =====
+    const API_URL = 'https://freetools4u.onrender.com'; // Connected to your Render Backend
 
     // ===== DOM refs =====
-    const dropzone     = document.getElementById('dropzone');
-    const fileInput    = document.getElementById('fileInput');
-    const fileInfo     = document.getElementById('fileInfo');
-    const fileNameEl   = document.getElementById('fileName');
-    const fileSizeEl   = document.getElementById('fileSize');
-    const removeFileBtn= document.getElementById('removeFile');
-    const actions      = document.getElementById('actions');
-    const convertBtn   = document.getElementById('convertBtn');
-    const statusEl     = document.getElementById('status');
-    const downloadActions = document.getElementById('downloadActions');
-    const downloadBtn  = document.getElementById('downloadBtn');
-    const resetBtn     = document.getElementById('resetBtn');
+    const dropzone       = document.getElementById('dropzone');
+    const fileInput      = document.getElementById('fileInput');
+    const fileInfo       = document.getElementById('fileInfo');
+    const fileNameEl     = document.getElementById('fileName');
+    const fileSizeEl     = document.getElementById('fileSize');
+    const removeFileBtn  = document.getElementById('removeFile');
+    const actions        = document.getElementById('actions');
+    const convertBtn     = document.getElementById('convertBtn');
+    const statusEl       = document.getElementById('status');
+    const downloadActions= document.getElementById('downloadActions');
+    const downloadBtn    = document.getElementById('downloadBtn');
+    const resetBtn       = document.getElementById('resetBtn');
 
     const MAX_SIZE_MB = 20;
     let selectedFile = null;
@@ -295,7 +290,6 @@
       downloadActions.style.display = 'none';
       hideStatus();
 
-      // Reset the convert button state
       convertBtn.disabled = false;
       convertBtn.textContent = 'Convert to Word';
     }
@@ -321,74 +315,26 @@
     removeFileBtn.addEventListener('click', resetUI);
     resetBtn.addEventListener('click', resetUI);
 
-    // ===== Conversion: PDF -> text -> DOCX =====
-    async function convertPdfToDocx(file) {
-      const arrayBuffer = await file.arrayBuffer();
+    // ===== Convert via Backend API =====
+    async function convertViaAPI(file) {
+      const formData = new FormData();
+      formData.append('file', file, file.name);
 
-      // 1. Load the PDF
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      const totalPages = pdf.numPages;
+      // Hit the Render API
+      const res = await fetch(`${API_URL}/convert/pdf-to-word`, {
+        method: 'POST',
+        body: formData,
+      });
 
-      // 2. Extract text from each page
-      const pageTexts = [];
-      for (let i = 1; i <= totalPages; i++) {
-        showStatus('loading',
-          `<span class="spinner"></span> Extracting text from page ${i} of ${totalPages}…`);
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-
-        // Rebuild text with line breaks based on vertical position
-        let lastY = null;
-        let pageText = '';
-        for (const item of textContent.items) {
-          const y = item.transform ? item.transform[5] : null;
-          if (lastY !== null && y !== null && Math.abs(y - lastY) > 2) {
-            pageText += '\n';
-          }
-          pageText += item.str;
-          if (item.hasEOL) pageText += '\n';
-          lastY = y;
-        }
-        pageTexts.push(pageText);
+      if (!res.ok) {
+        let detail = `Server error (${res.status}).`;
+        try {
+          const j = await res.json();
+          if (j.detail) detail = j.detail;
+        } catch (_) {}
+        throw new Error(detail);
       }
-
-      // 3. Build the DOCX
-      showStatus('loading', '<span class="spinner"></span> Generating Word document…');
-
-      const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
-
-      const children = [];
-
-      // Title
-      children.push(new Paragraph({
-        text: file.name.replace(/\.pdf$/i, ''),
-        heading: HeadingLevel.HEADING_1,
-        spacing: { after: 300 }
-      }));
-
-      // Body: one paragraph per source line
-      pageTexts.forEach((text, idx) => {
-        const lines = text.split('\n');
-        lines.forEach(line => {
-          children.push(new Paragraph({
-            children: [new TextRun({ text: line, size: 22 })],
-            spacing: { after: 80 }
-          }));
-        });
-
-        // Page break between pages (except last)
-        if (idx < pageTexts.length - 1) {
-          children.push(new Paragraph({ text: '', pageBreakBefore: true }));
-        }
-      });
-
-      const doc = new Document({
-        creator: 'FreeTools4U',
-        title: file.name.replace(/\.pdf$/i, ''),
-        sections: [{ properties: {}, children }]
-      });
-
-      return await Packer.toBlob(doc);
+      return await res.blob();
     }
 
     convertBtn.addEventListener('click', async () => {
@@ -397,18 +343,21 @@
       convertBtn.disabled = true;
       convertBtn.textContent = 'Converting…';
       downloadActions.style.display = 'none';
+      
+      // Show loading message. Note: Render's free tier may take 30s to wake up.
+      showStatus('loading',
+        '<span class="spinner"></span> Uploading and converting — this can take up to 30 seconds…');
 
       try {
-        docxBlob = await convertPdfToDocx(selectedFile);
+        docxBlob = await convertViaAPI(selectedFile);
         docxName = selectedFile.name.replace(/\.pdf$/i, '') + '.docx';
 
         showStatus('success', '✅ Conversion complete! Your Word file is ready to download.');
         downloadActions.style.display = 'flex';
-
         convertBtn.textContent = 'Convert again';
       } catch (err) {
         console.error(err);
-        showStatus('error', '❌ Something went wrong while converting. Please try another PDF.');
+        showStatus('error', `❌ ${err.message || 'Conversion failed. Please try again.'}`);
         convertBtn.textContent = 'Try again';
       } finally {
         convertBtn.disabled = false;
