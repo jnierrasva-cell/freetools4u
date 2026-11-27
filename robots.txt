@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://freetools4u.xyz/sitemap.xml
