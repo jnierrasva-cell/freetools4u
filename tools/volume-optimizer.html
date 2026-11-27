@@ -254,19 +254,23 @@
     let mediaStream = null;
     let sourceNode = null;
     let highpassNode = null;
-    let humCutNode = null;
     let compressorNode = null;
     let postGainNode = null;
     let safetyCompressor = null;
     let analyser = null;
+    let gateTimer = null;
     let animationFrame = null;
+
+    function getTargetGain() {
+      const percent = parseInt(volumeSlider.value, 10) || 100;
+      return percent / 100;
+    }
 
     function applyCompressionSettings(val) {
       if (!compressorNode || !audioContext) return;
       const now = audioContext.currentTime;
-      // Keep threshold higher (-10 dB to -19 dB) so paused/quiet hum is not pulled up
-      const threshold = -10 - (val * 0.9);
-      const ratio = 1.15 + (val * 0.35); // 1.5:1 to 4.65:1
+      const threshold = -12 - (val * 1.0);
+      const ratio = 1.2 + (val * 0.4);
       const knee = 24;
 
       compressorNode.threshold.setTargetAtTime(threshold, now, 0.03);
@@ -293,6 +297,33 @@
       else compVal.textContent = 'Strong';
       applyCompressionSettings(val);
     });
+
+    // Monitors input energy and ducks output during idle/loopback noise floors
+    function startIdleGateMonitor() {
+      if (gateTimer) clearInterval(gateTimer);
+      const levelBuffer = new Uint8Array(analyser.fftSize);
+
+      gateTimer = setInterval(() => {
+        if (!analyser || !postGainNode || !audioContext) return;
+        analyser.getByteTimeDomainData(levelBuffer);
+
+        let sumSquares = 0;
+        for (let i = 0; i < levelBuffer.length; i++) {
+          const norm = (levelBuffer[i] - 128) / 128;
+          sumSquares += norm * norm;
+        }
+        const rms = Math.sqrt(sumSquares / levelBuffer.length);
+        const now = audioContext.currentTime;
+        const desiredGain = getTargetGain();
+
+        // Very quiet/idle signal: attenuate to prevent idle hum/feedback buildup
+        if (rms < 0.012) {
+          postGainNode.gain.setTargetAtTime(desiredGain * 0.05, now, 0.06);
+        } else {
+          postGainNode.gain.setTargetAtTime(desiredGain, now, 0.02);
+        }
+      }, 40);
+    }
 
     async function startAudio() {
       try {
@@ -322,27 +353,18 @@
 
         sourceNode = audioContext.createMediaStreamSource(mediaStream);
 
-        // 90 Hz high-pass trims low hum/rumble
         highpassNode = audioContext.createBiquadFilter();
         highpassNode.type = 'highpass';
-        highpassNode.frequency.value = 90;
+        highpassNode.frequency.value = 85;
         highpassNode.Q.value = 0.7;
 
-        // Subtle cut at 140 Hz reduces boxy/hum resonance visible on left visualizer bars
-        humCutNode = audioContext.createBiquadFilter();
-        humCutNode.type = 'peaking';
-        humCutNode.frequency.value = 140;
-        humCutNode.Q.value = 1.8;
-        humCutNode.gain.value = -3.5;
-
-        // Faster release prevents compressor tail/echo smearing on loud-to-quiet transitions
         compressorNode = audioContext.createDynamicsCompressor();
-        compressorNode.attack.value = 0.015;
-        compressorNode.release.value = 0.16;
+        compressorNode.attack.value = 0.02;
+        compressorNode.release.value = 0.25;
         applyCompressionSettings(parseInt(compSlider.value, 10));
 
         postGainNode = audioContext.createGain();
-        postGainNode.gain.value = parseInt(volumeSlider.value, 10) / 100;
+        postGainNode.gain.value = getTargetGain();
 
         safetyCompressor = audioContext.createDynamicsCompressor();
         safetyCompressor.threshold.value = -1.0;
@@ -356,12 +378,13 @@
         analyser.smoothingTimeConstant = 0.84;
 
         sourceNode.connect(highpassNode);
-        highpassNode.connect(humCutNode);
-        humCutNode.connect(compressorNode);
+        highpassNode.connect(compressorNode);
         compressorNode.connect(postGainNode);
         postGainNode.connect(safetyCompressor);
         safetyCompressor.connect(analyser);
         analyser.connect(audioContext.destination);
+
+        startIdleGateMonitor();
 
         startBtn.style.display = 'none';
         stopBtn.style.display = 'inline-flex';
@@ -385,6 +408,10 @@
     }
 
     function stopAudio() {
+      if (gateTimer) {
+        clearInterval(gateTimer);
+        gateTimer = null;
+      }
       if (animationFrame) {
         cancelAnimationFrame(animationFrame);
         animationFrame = null;
@@ -403,7 +430,6 @@
 
       sourceNode = null;
       highpassNode = null;
-      humCutNode = null;
       compressorNode = null;
       postGainNode = null;
       safetyCompressor = null;
