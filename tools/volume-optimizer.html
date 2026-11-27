@@ -255,10 +255,12 @@
     let sourceNode = null;
     let highpassNode = null;
     let compressorNode = null;
+    let preGateAnalyser = null;
     let postGainNode = null;
     let safetyCompressor = null;
     let analyser = null;
     let gateTimer = null;
+    let belowThresholdSince = null;
     let animationFrame = null;
 
     function getTargetGain() {
@@ -298,14 +300,15 @@
       applyCompressionSettings(val);
     });
 
-    // Monitors input energy and ducks output during idle/loopback noise floors
+    // Monitors pre-boost signal energy so increasing Volume Boost doesn't latch the gate open
     function startIdleGateMonitor() {
       if (gateTimer) clearInterval(gateTimer);
-      const levelBuffer = new Uint8Array(analyser.fftSize);
+      belowThresholdSince = null;
+      const levelBuffer = new Uint8Array(preGateAnalyser.fftSize);
 
       gateTimer = setInterval(() => {
-        if (!analyser || !postGainNode || !audioContext) return;
-        analyser.getByteTimeDomainData(levelBuffer);
+        if (!preGateAnalyser || !postGainNode || !audioContext) return;
+        preGateAnalyser.getByteTimeDomainData(levelBuffer);
 
         let sumSquares = 0;
         for (let i = 0; i < levelBuffer.length; i++) {
@@ -315,11 +318,18 @@
         const rms = Math.sqrt(sumSquares / levelBuffer.length);
         const now = audioContext.currentTime;
         const desiredGain = getTargetGain();
+        const perfNow = performance.now();
 
-        // Very quiet/idle signal: attenuate to prevent idle hum/feedback buildup
-        if (rms < 0.012) {
-          postGainNode.gain.setTargetAtTime(desiredGain * 0.05, now, 0.06);
+        if (rms < 0.015) {
+          if (belowThresholdSince === null) {
+            belowThresholdSince = perfNow;
+          }
+          // After 250ms of quiet pre-boost signal, drop gain so hum/buzz/echo doesn't stay stuck
+          if (perfNow - belowThresholdSince >= 250) {
+            postGainNode.gain.setTargetAtTime(desiredGain * 0.04, now, 0.05);
+          }
         } else {
+          belowThresholdSince = null;
           postGainNode.gain.setTargetAtTime(desiredGain, now, 0.02);
         }
       }, 40);
@@ -363,6 +373,9 @@
         compressorNode.release.value = 0.25;
         applyCompressionSettings(parseInt(compSlider.value, 10));
 
+        preGateAnalyser = audioContext.createAnalyser();
+        preGateAnalyser.fftSize = 256;
+
         postGainNode = audioContext.createGain();
         postGainNode.gain.value = getTargetGain();
 
@@ -379,6 +392,7 @@
 
         sourceNode.connect(highpassNode);
         highpassNode.connect(compressorNode);
+        compressorNode.connect(preGateAnalyser);
         compressorNode.connect(postGainNode);
         postGainNode.connect(safetyCompressor);
         safetyCompressor.connect(analyser);
@@ -412,6 +426,7 @@
         clearInterval(gateTimer);
         gateTimer = null;
       }
+      belowThresholdSince = null;
       if (animationFrame) {
         cancelAnimationFrame(animationFrame);
         animationFrame = null;
@@ -431,6 +446,7 @@
       sourceNode = null;
       highpassNode = null;
       compressorNode = null;
+      preGateAnalyser = null;
       postGainNode = null;
       safetyCompressor = null;
       analyser = null;
