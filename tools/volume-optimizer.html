@@ -131,8 +131,8 @@
           </div>
           <div class="control">
             <label for="compressionSlider">Peak control <output id="compressionValue" for="compressionSlider">Light</output></label>
-            <input id="compressionSlider" type="range" min="0" max="10" value="2" step="1">
-            <span class="hint">Gentle compression can reduce loud peaks. It is not a guarantee against clipping or source distortion.</span>
+            <input id="compressionSlider" type="range" min="0" max="6" value="1" step="1">
+            <span class="hint">Start with Light or Off. Strong compression can make background hiss and sharp sounds more noticeable.</span>
           </div>
         </div>
 
@@ -146,7 +146,7 @@
             <li>Select <strong>Stop boosting</strong> before choosing another source.</li>
           </ol>
           <div class="notice">
-            <strong>Browser-only limitation:</strong> This web tool processes audio that the browser allows it to capture. It cannot directly control or capture every Windows desktop app. Do not select this optimizer tab as its own source. Avoid capturing system audio while the original app is also playing through another route, as duplicate playback can cause echo.
+            <strong>Browser-only limitation:</strong> This web tool processes audio that the browser allows it to capture. It cannot directly control or capture every Windows desktop app. The optimizer asks Chrome to suppress the captured tab's original local playback to help prevent duplicate audio and echo. If your browser does not support that option, lower or mute the original tab's local output if possible.
           </div>
         </div>
       </section>
@@ -181,7 +181,6 @@
       let sourceNode = null;
       let gainNode = null;
       let compressorNode = null;
-      let peakControlNode = null;
       let analyserNode = null;
       let animationFrameId = null;
       let starting = false;
@@ -201,7 +200,7 @@
 
       function updateCompression() {
         const amount = Number(compressionSlider.value);
-        compressionValue.textContent = amount <= 2 ? "Light" : amount <= 6 ? "Moderate" : "Strong";
+        compressionValue.textContent = amount === 0 ? "Off" : amount <= 2 ? "Light" : amount <= 4 ? "Moderate" : "Strong";
 
         if (!compressorNode || !audioContext) return;
         const now = audioContext.currentTime;
@@ -213,9 +212,9 @@
           return;
         }
 
-        compressorNode.threshold.setTargetAtTime(-6 - amount * 1.2, now, 0.05);
-        compressorNode.ratio.setTargetAtTime(1.2 + amount * 0.35, now, 0.05);
-        compressorNode.knee.setTargetAtTime(8, now, 0.05);
+        compressorNode.threshold.setTargetAtTime(-8 - amount * 1.5, now, 0.08);
+        compressorNode.ratio.setTargetAtTime(1.2 + amount * 0.35, now, 0.08);
+        compressorNode.knee.setTargetAtTime(12, now, 0.08);
       }
 
       function resizeCanvas() {
@@ -283,7 +282,6 @@
         sourceNode = null;
         gainNode = null;
         compressorNode = null;
-        peakControlNode = null;
         analyserNode = null;
         starting = false;
 
@@ -309,11 +307,11 @@
         setStatus("Waiting for source selection…");
 
         try {
-          // The browser requires a video track for display capture. Keep it alive
-          // for the capture session; only the audio track is connected to Web Audio.
           const stream = await navigator.mediaDevices.getDisplayMedia({
             video: true,
-            audio: true
+            audio: { suppressLocalAudioPlayback: true },
+            selfBrowserSurface: "exclude",
+            systemAudio: "exclude"
           });
           mediaStream = stream;
 
@@ -337,28 +335,19 @@
           sourceNode = audioContext.createMediaStreamSource(stream);
           gainNode = audioContext.createGain();
           compressorNode = audioContext.createDynamicsCompressor();
-          peakControlNode = audioContext.createDynamicsCompressor();
           analyserNode = audioContext.createAnalyser();
 
-          compressorNode.attack.value = 0.006;
-          compressorNode.release.value = 0.16;
-          // Final peak-reduction stage. DynamicsCompressorNode is not a true brick-wall limiter.
-          peakControlNode.threshold.value = -2.0;
-          peakControlNode.knee.value = 0;
-          peakControlNode.ratio.value = 20;
-          peakControlNode.attack.value = 0.003;
-          peakControlNode.release.value = 0.12;
+          compressorNode.attack.value = 0.012;
+          compressorNode.release.value = 0.25;
           analyserNode.fftSize = 2048;
           analyserNode.smoothingTimeConstant = 0.72;
 
           gainNode.gain.value = Number(volumeSlider.value) / 100;
           updateCompression();
 
-          // One path only: source -> gain -> gentle peak control -> analyser -> output.
           sourceNode.connect(gainNode);
           gainNode.connect(compressorNode);
-          compressorNode.connect(peakControlNode);
-          peakControlNode.connect(analyserNode);
+          compressorNode.connect(analyserNode);
           analyserNode.connect(audioContext.destination);
 
           for (const track of stream.getTracks()) {
