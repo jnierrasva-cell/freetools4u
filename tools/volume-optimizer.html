@@ -241,9 +241,7 @@
       else compVal.textContent = 'Extreme';
       
       if (compressorNode) {
-        // Map 1-10 to a ratio from 2:1 to 20:1
         compressorNode.ratio.value = 2 + (val * 1.8);
-        // Increase threshold (making it more aggressive) as slider goes up
         compressorNode.threshold.value = -10 - (val * 4); 
       }
     });
@@ -252,11 +250,13 @@
       try {
         // 1. Request Display Media (System Audio)
         mediaStream = await navigator.mediaDevices.getDisplayMedia({
-          video: true, // Required by some browsers to show the prompt
+          video: true, // Required by browsers to prompt for system audio
           audio: {
-            echoCancellation: false,
-            noiseSuppression: false,
-            autoGainControl: false
+            echoCancellation: false,    // Prevents feedback loops
+            noiseSuppression: false,    // Stops the "robotic" gating effect
+            autoGainControl: false,     // We use our own gain slider, so turn this off
+            channelCount: 2,            // Force stereo
+            sampleRate: 48000           // High quality audio
           }
         });
 
@@ -268,27 +268,39 @@
         }
 
         // 2. Initialize Audio Context
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // Use a high sample rate to prevent aliasing noise
+        audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
         
+        // Ensure the context is running (browsers sometimes suspend it by default)
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+        }
+
         // 3. Create Nodes
         sourceNode = audioContext.createMediaStreamSource(mediaStream);
+        
+        // --- GAIN NODE ---
         gainNode = audioContext.createGain();
-        compressorNode = audioContext.createDynamicsCompressor();
-        analyser = audioContext.createAnalyser();
-
-        // Set initial values based on UI
         gainNode.gain.value = volumeSlider.value / 100;
-        
+
+        // --- COMPRESSOR NODE ---
+        compressorNode = audioContext.createDynamicsCompressor();
         const compLevel = parseInt(compSlider.value);
-        compressorNode.ratio.value = 2 + (compLevel * 1.8);
-        compressorNode.threshold.value = -10 - (compLevel * 4);
         
+        compressorNode.threshold.value = -10 - (compLevel * 4);
+        compressorNode.ratio.value = 2 + (compLevel * 1.8);
+        compressorNode.knee.value = 10;   // Softens the compression curve to prevent robotic pumping
+        compressorNode.attack.value = 0.01; // Fast attack to catch sudden spikes
+        compressorNode.release.value = 0.25; // Smooth release to prevent wobbly sound
+
+        analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
 
-        // 4. Connect Nodes: Source -> Compressor -> Gain -> Analyser -> Output
-        sourceNode.connect(compressorNode);
-        compressorNode.connect(gainNode);
-        gainNode.connect(analyser);
+        // 4. Connect Nodes: Source -> Gain -> Compressor -> Analyser -> Output
+        // Note: We put Gain BEFORE Compressor. This boosts the quiet sounds first, THEN compresses the loud spikes.
+        sourceNode.connect(gainNode);
+        gainNode.connect(compressorNode);
+        compressorNode.connect(analyser);
         analyser.connect(audioContext.destination);
 
         // 5. Update UI
