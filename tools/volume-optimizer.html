@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Live Volume Optimizer — FreeTools4U</title>
-  <meta name="description" content="Boost and optimize audio volume for your entire computer, browser, or local software in real-time. Free, no download required.">
+  <meta name="description" content="Boost and optimize audio volume for your browser tabs in real-time. Free, no download required.">
   <link rel="canonical" href="https://freetools4u.xyz/tools/volume-optimizer.html">
 
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-xxxxxxxxxxxxxxxx" crossorigin="anonymous"></script>
@@ -111,12 +111,25 @@
     }
     .control-hint { font-size: 0.8rem; color: var(--slate-light); margin-top: 8px; display: block; }
 
-    .note {
-      margin-top: 32px; padding: 16px 18px;
-      background: #fffbeb; border: 1px solid #fde68a;
-      border-radius: 12px; font-size: 0.85rem; color: #92400e; text-align: left;
+    /* Instructions Card */
+    .instructions {
+      margin-top: 32px; text-align: left;
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px;
+      padding: 24px;
     }
-    .note strong { color: #78350f; }
+    .instructions h3 { font-size: 1.1rem; color: var(--ink); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .instructions ul { list-style: none; display: flex; flex-direction: column; gap: 16px; }
+    .instructions li { display: flex; gap: 12px; font-size: 0.9rem; color: var(--slate); }
+    .instructions li strong { color: var(--ink); display: block; margin-bottom: 2px; }
+    .step-num {
+      display: flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; border-radius: 50%; background: var(--primary-soft);
+      color: var(--primary); font-weight: 700; font-size: 0.8rem; flex-shrink: 0;
+    }
+    .warning-box {
+      margin-top: 16px; padding: 16px; background: #fffbeb; border: 1px solid #fde68a;
+      border-radius: 12px; font-size: 0.85rem; color: #92400e;
+    }
 
     /* Ad slot */
     .ad-slot {
@@ -155,7 +168,7 @@
         <a href="https://freetools4u.xyz/">Home</a> › <span>Volume Optimizer</span>
       </div>
       <h1 class="page-title">Live Volume Optimizer</h1>
-      <p class="page-sub">Boost quiet audio and normalize loud spikes in real-time. Works with browser tabs, local software, games, and media players.</p>
+      <p class="page-sub">Boost quiet audio and normalize loud spikes in real-time directly in your browser.</p>
 
       <div class="tool-card">
         
@@ -167,7 +180,7 @@
           <canvas id="visualizer"></canvas>
         </div>
 
-        <button class="btn btn-primary" id="startBtn">🎙️ Start Routing Audio</button>
+        <button class="btn btn-primary" id="startBtn">🎙️ Select Audio to Boost</button>
         <button class="btn btn-danger" id="stopBtn" style="display:none;">⏹️ Stop Routing</button>
 
         <div style="margin-top: 32px; display: flex; flex-direction: column; gap: 20px;">
@@ -184,9 +197,30 @@
           </div>
         </div>
 
-        <div class="note">
-          <strong>How to use this:</strong> Click "Start Routing", then select the window, browser tab, or game you want to boost. <br><br>
-          <em>⚠️ Important for local software (VLC, OBS, Games):</em> When the browser prompt appears, choose <strong>"Entire Screen"</strong> and make sure <strong>"Share system audio"</strong> is checked at the bottom. Keep this tab open in the background while you use your other software.
+        <!-- New Instructions Section -->
+        <div class="instructions">
+          <h3>📖 How to use this tool</h3>
+          
+          <ul>
+            <li>
+              <span class="step-num">1</span>
+              <div>
+                <strong>For Browser Tabs (Best Experience)</strong>
+                Click "Select Audio to Boost", choose the <strong>Chrome Tab</strong> playing your video/music, and ensure <strong>"Share tab audio"</strong> is checked.
+              </div>
+            </li>
+            <li>
+              <span class="step-num">2</span>
+              <div>
+                <strong>For Local Software (VLC, OBS, Games)</strong>
+                Click "Select Audio to Boost", choose <strong>"Entire Screen"</strong>, and check <strong>"Share system audio"</strong> at the bottom.
+              </div>
+            </li>
+          </ul>
+
+          <div class="warning-box">
+            <strong>⚠️ Important for Local Software:</strong> Browsers mute the captured audio to prevent digital feedback loops (that "machine noise"). If you are capturing "Entire Screen", the audio will play normally on your computer, but the volume sliders on this page will <em>not</em> affect what you hear unless you use a virtual audio cable (like VB-Audio). <strong>This tool works perfectly and applies live boosts for Browser Tabs.</strong>
+          </div>
         </div>
 
       </div>
@@ -250,28 +284,25 @@
       try {
         // 1. Request Display Media (System Audio)
         mediaStream = await navigator.mediaDevices.getDisplayMedia({
-          video: true, // Required by browsers to prompt for system audio
+          video: true,
           audio: {
-            echoCancellation: false,    // Prevents feedback loops
-            noiseSuppression: false,    // Stops the "robotic" gating effect
-            autoGainControl: false,     // We use our own gain slider, so turn this off
-            channelCount: 2,            // Force stereo
-            sampleRate: 48000           // High quality audio
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+            channelCount: 2,
+            sampleRate: 48000
           }
         });
 
-        // Check if they actually shared audio
         if (mediaStream.getAudioTracks().length === 0) {
-          alert("No audio track found. Please make sure to check 'Share system audio' when selecting the screen.");
+          alert("No audio track found. Please make sure to check 'Share tab audio' or 'Share system audio' when selecting.");
           stopAudio();
           return;
         }
 
         // 2. Initialize Audio Context
-        // Use a high sample rate to prevent aliasing noise
         audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
         
-        // Ensure the context is running (browsers sometimes suspend it by default)
         if (audioContext.state === 'suspended') {
           await audioContext.resume();
         }
@@ -279,25 +310,22 @@
         // 3. Create Nodes
         sourceNode = audioContext.createMediaStreamSource(mediaStream);
         
-        // --- GAIN NODE ---
         gainNode = audioContext.createGain();
         gainNode.gain.value = volumeSlider.value / 100;
 
-        // --- COMPRESSOR NODE ---
         compressorNode = audioContext.createDynamicsCompressor();
         const compLevel = parseInt(compSlider.value);
         
         compressorNode.threshold.value = -10 - (compLevel * 4);
         compressorNode.ratio.value = 2 + (compLevel * 1.8);
-        compressorNode.knee.value = 10;   // Softens the compression curve to prevent robotic pumping
-        compressorNode.attack.value = 0.01; // Fast attack to catch sudden spikes
-        compressorNode.release.value = 0.25; // Smooth release to prevent wobbly sound
+        compressorNode.knee.value = 10;
+        compressorNode.attack.value = 0.01;
+        compressorNode.release.value = 0.25;
 
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
 
-        // 4. Connect Nodes: Source -> Gain -> Compressor -> Analyser -> Output
-        // Note: We put Gain BEFORE Compressor. This boosts the quiet sounds first, THEN compresses the loud spikes.
+        // 4. Connect Nodes
         sourceNode.connect(gainNode);
         gainNode.connect(compressorNode);
         compressorNode.connect(analyser);
@@ -320,7 +348,7 @@
       } catch (err) {
         console.error("Error accessing audio:", err);
         if (err.name !== 'NotAllowedError') {
-          alert("Could not capture audio. Make sure you are using a supported browser (Chrome/Edge) and sharing system audio.");
+          alert("Could not capture audio. Make sure you are using a supported browser (Chrome/Edge) and sharing audio.");
         }
       }
     }
@@ -339,18 +367,14 @@
       statusBadge.classList.remove('active');
       statusText.textContent = 'Inactive';
 
-      // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
     function drawVisualizer() {
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
-
-      // Set canvas resolution to match display size
       canvas.width = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
-      
       const width = canvas.width;
       const height = canvas.height;
 
@@ -367,22 +391,17 @@
 
         for (let i = 0; i < bufferLength; i++) {
           barHeight = (dataArray[i] / 255) * height;
-
-          // Gradient for the bars
           const gradient = ctx.createLinearGradient(0, height - barHeight, 0, height);
-          gradient.addColorStop(0, '#3b82f6'); // Blue
-          gradient.addColorStop(1, '#1d4ed8'); // Darker Blue
-
+          gradient.addColorStop(0, '#3b82f6');
+          gradient.addColorStop(1, '#1d4ed8');
           ctx.fillStyle = gradient;
           ctx.fillRect(x, height - barHeight, barWidth, barHeight);
-
           x += barWidth + 1;
         }
       }
       draw();
     }
 
-    // Event Listeners
     startBtn.addEventListener('click', startAudio);
     stopBtn.addEventListener('click', stopAudio);
   </script>
