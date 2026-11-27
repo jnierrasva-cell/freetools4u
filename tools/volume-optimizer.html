@@ -253,56 +253,23 @@
     let audioContext = null;
     let mediaStream = null;
     let sourceNode = null;
-    let dcHighpassNode = null;
-    let humNotchNode = null;
-    let lowpassNode = null;
-    let expanderNode = null;
+    let highpassNode = null;
     let compressorNode = null;
     let postGainNode = null;
     let safetyCompressor = null;
     let analyser = null;
     let animationFrame = null;
 
-    // Gentle downward expander curve to quiet low-level hum/buzz during pauses
-    function createNoiseGateCurve(amount = 0.5) {
-      const samples = 2048;
-      const curve = new Float32Array(samples);
-      const gateFloor = 0.015 + (amount * 0.025); // ~ -36 dB to -29 dB region
-
-      for (let i = 0; i < samples; i++) {
-        const x = (i * 2) / samples - 1; // -1 to +1
-        const absX = Math.abs(x);
-
-        if (absX < gateFloor) {
-          // Attenuate very quiet hum/buzz smoothly
-          const ratio = absX / gateFloor;
-          const gated = Math.pow(ratio, 1.8) * gateFloor * 0.35;
-          curve[i] = Math.sign(x) * gated;
-        } else {
-          // Smooth transition back to linear pass-through
-          const t = Math.min(1, (absX - gateFloor) / 0.04);
-          const smoothT = t * t * (3 - 2 * t);
-          const gated = Math.pow(gateFloor / Math.max(absX, gateFloor), 1.8) * gateFloor * 0.35;
-          curve[i] = Math.sign(x) * (gated * (1 - smoothT) + absX * smoothT);
-        }
-      }
-      return curve;
-    }
-
     function applyCompressionSettings(val) {
       if (!compressorNode || !audioContext) return;
       const now = audioContext.currentTime;
-      const threshold = -13 - (val * 1.0);
-      const ratio = 1.25 + (val * 0.4);
+      const threshold = -14 - (val * 1.1);
+      const ratio = 1.2 + (val * 0.45);
       const knee = 24;
 
       compressorNode.threshold.setTargetAtTime(threshold, now, 0.03);
       compressorNode.ratio.setTargetAtTime(ratio, now, 0.03);
       compressorNode.knee.setTargetAtTime(knee, now, 0.03);
-
-      if (expanderNode) {
-        expanderNode.curve = createNoiseGateCurve(val / 10);
-      }
     }
 
     function applyVolumeSettings(percent) {
@@ -353,45 +320,27 @@
 
         sourceNode = audioContext.createMediaStreamSource(mediaStream);
 
-        // High-pass at 55 Hz removes DC offset and low electrical/mains hum
-        dcHighpassNode = audioContext.createBiquadFilter();
-        dcHighpassNode.type = 'highpass';
-        dcHighpassNode.frequency.value = 55;
-        dcHighpassNode.Q.value = 0.7;
+        // Clean high-pass at 40 Hz to trim sub-bass rumble without losing warmth
+        highpassNode = audioContext.createBiquadFilter();
+        highpassNode.type = 'highpass';
+        highpassNode.frequency.value = 40;
+        highpassNode.Q.value = 0.7;
 
-        // Subtle notch around 120 Hz (common hum harmonic) without hurting warmth
-        humNotchNode = audioContext.createBiquadFilter();
-        humNotchNode.type = 'peaking';
-        humNotchNode.frequency.value = 120;
-        humNotchNode.Q.value = 2.5;
-        humNotchNode.gain.value = -4;
-
-        // Gentle downward expander to quiet low-level buzz/hum
-        expanderNode = audioContext.createWaveShaper();
-        expanderNode.curve = createNoiseGateCurve(parseInt(compSlider.value, 10) / 10);
-        expanderNode.oversample = '2x';
-
-        // Main leveler
+        // Smooth leveler before output gain
         compressorNode = audioContext.createDynamicsCompressor();
-        compressorNode.attack.value = 0.025;
-        compressorNode.release.value = 0.35;
+        compressorNode.attack.value = 0.02;
+        compressorNode.release.value = 0.3;
         applyCompressionSettings(parseInt(compSlider.value, 10));
 
-        // Gentle roll-off above 14 kHz to reduce high-frequency buzz/ringing
-        lowpassNode = audioContext.createBiquadFilter();
-        lowpassNode.type = 'lowpass';
-        lowpassNode.frequency.value = 14000;
-        lowpassNode.Q.value = 0.7;
-
-        // Output boost
+        // Direct volume boost
         postGainNode = audioContext.createGain();
         postGainNode.gain.value = parseInt(volumeSlider.value, 10) / 100;
 
         // Peak safety limiter
         safetyCompressor = audioContext.createDynamicsCompressor();
-        safetyCompressor.threshold.value = -1.5;
-        safetyCompressor.knee.value = 4;
-        safetyCompressor.ratio.value = 12;
+        safetyCompressor.threshold.value = -1.0;
+        safetyCompressor.knee.value = 6;
+        safetyCompressor.ratio.value = 10;
         safetyCompressor.attack.value = 0.003;
         safetyCompressor.release.value = 0.08;
 
@@ -399,13 +348,10 @@
         analyser.fftSize = 256;
         analyser.smoothingTimeConstant = 0.84;
 
-        // Chain: Source -> Highpass -> HumNotch -> Expander -> Compressor -> Lowpass -> PostGain -> Limiter -> Analyser -> Output
-        sourceNode.connect(dcHighpassNode);
-        dcHighpassNode.connect(humNotchNode);
-        humNotchNode.connect(expanderNode);
-        expanderNode.connect(compressorNode);
-        compressorNode.connect(lowpassNode);
-        lowpassNode.connect(postGainNode);
+        // Chain: Source -> Highpass -> Compressor -> PostGain -> Limiter -> Analyser -> Output
+        sourceNode.connect(highpassNode);
+        highpassNode.connect(compressorNode);
+        compressorNode.connect(postGainNode);
         postGainNode.connect(safetyCompressor);
         safetyCompressor.connect(analyser);
         analyser.connect(audioContext.destination);
@@ -449,10 +395,7 @@
       }
 
       sourceNode = null;
-      dcHighpassNode = null;
-      humNotchNode = null;
-      lowpassNode = null;
-      expanderNode = null;
+      highpassNode = null;
       compressorNode = null;
       postGainNode = null;
       safetyCompressor = null;
