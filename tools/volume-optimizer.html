@@ -1,390 +1,375 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Volume Optimizer — FreeTools4U</title>
-  <meta name="description" content="Boost browser-tab audio beyond its normal level with adjustable volume and gentle peak control.">
-  <link rel="canonical" href="https://www.freetools4u.xyz/tools/volume-optimizer.html">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --ink: #0b1e3a; --slate: #4b5a6e; --muted: #64748b;
-      --border: #e7ecf2; --surface: #fff; --soft: #f8fafc;
-      --primary: #1d4ed8; --primary-soft: #eef4ff;
-      --radius: 18px;
-    }
-    body {
-      min-height: 100vh; display: flex; flex-direction: column;
-      font-family: Inter, system-ui, sans-serif; line-height: 1.6;
-      color: var(--ink); background: var(--soft);
-    }
-    .container { width: min(880px, 100% - 40px); margin-inline: auto; }
-    .site-header {
-      position: sticky; top: 0; z-index: 5; background: rgba(255,255,255,.94);
-      border-bottom: 1px solid var(--border); backdrop-filter: blur(12px);
-    }
-    .header-inner { height: 68px; display: flex; align-items: center; justify-content: space-between; }
-    .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-weight: 800; font-size: 1.2rem; }
-    .brand-mark {
-      display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px;
-      color: white; background: linear-gradient(135deg,#1d4ed8,#3b82f6);
-    }
-    .nav a { color: var(--slate); text-decoration: none; font-size: .9rem; font-weight: 600; }
-    main { flex: 1; padding: 42px 0 64px; }
-    .breadcrumb { margin-bottom: 16px; color: var(--muted); font-size: .84rem; }
-    .breadcrumb a { color: inherit; text-decoration: none; }
-    h1 { font-size: clamp(1.8rem, 5vw, 2.35rem); line-height: 1.2; letter-spacing: -1px; margin-bottom: 9px; }
-    .page-sub { max-width: 680px; color: var(--slate); margin-bottom: 28px; }
-    .tool-card {
-      padding: clamp(20px, 5vw, 38px); background: var(--surface);
-      border: 1px solid var(--border); border-radius: var(--radius);
-      box-shadow: 0 8px 24px -8px rgba(11,30,58,.08); text-align: center;
-    }
-    .status {
-      display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px;
-      margin-bottom: 20px; border-radius: 999px; background: #e2e8f0;
-      color: #475569; font-size: .84rem; font-weight: 700;
-    }
-    .status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
-    .status.active { color: #166534; background: #dcfce7; }
-    .status.active::before { background: #22c55e; }
-    .status.error { color: #991b1b; background: #fee2e2; }
-    .status.error::before { background: #ef4444; }
-    .visualizer-wrap { padding: 16px; margin-bottom: 22px; border-radius: 14px; background: var(--soft); border: 1px solid var(--border); }
-    canvas { display: block; width: 100%; height: 112px; border-radius: 8px; background: #0f172a; }
-    .actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-    button {
-      border: 0; border-radius: 11px; padding: 13px 22px; min-height: 48px;
-      font: inherit; font-weight: 700; cursor: pointer;
-    }
-    button:disabled { opacity: .55; cursor: not-allowed; }
-    .primary { color: #fff; background: var(--primary); box-shadow: 0 4px 14px -2px rgba(29,78,216,.3); }
-    .danger { color: #fff; background: #dc2626; }
-    .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 26px; text-align: left; }
-    .control {
-      padding: 18px; background: var(--soft); border: 1px solid var(--border); border-radius: 14px;
-    }
-    .control label { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 12px; font-weight: 700; font-size: .93rem; }
-    .control output { color: var(--primary); white-space: nowrap; }
-    input[type="range"] { width: 100%; accent-color: var(--primary); cursor: pointer; }
-    .hint { display: block; margin-top: 8px; color: var(--muted); font-size: .78rem; }
-    .instructions {
-      margin-top: 24px; padding: 20px; border: 1px solid var(--border);
-      border-radius: 14px; background: #fbfdff; text-align: left;
-    }
-    .instructions h2 { margin-bottom: 10px; font-size: 1.05rem; }
-    .instructions ol { padding-left: 20px; color: var(--slate); font-size: .9rem; }
-    .instructions li + li { margin-top: 8px; }
-    .notice {
-      margin-top: 14px; padding: 13px 14px; border-radius: 10px;
-      color: #854d0e; background: #fffbeb; border: 1px solid #fde68a; font-size: .84rem;
-    }
-    .ad-slot {
-      margin: 30px auto; padding: 16px; max-width: 970px; text-align: center;
-      border: 1px dashed #d6dee8; border-radius: 12px; color: #9aa8b9; background: #fff; font-size: .8rem;
-    }
-    .site-footer { padding: 26px 0; color: #8fa1b8; background: var(--ink); font-size: .82rem; }
-    .footer-inner { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-    .site-footer a { color: #b0c0d4; text-decoration: none; }
-    @media (max-width: 640px) {
-      .control-grid { grid-template-columns: 1fr; }
-      main { padding-top: 30px; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Volume Optimizer — FreeTools4U</title>
+<meta name="description" content="Boost browser-tab audio with adjustable volume and peak control.">
+<link rel="canonical" href="https://www.freetools4u.xyz/tools/volume-optimizer.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#0b1e3a;--slate:#4b5a6e;--muted:#64748b;--border:#e7ecf2;--soft:#f8fafc;--primary:#1d4ed8}
+body{min-height:100vh;display:flex;flex-direction:column;font-family:Inter,system-ui,sans-serif;line-height:1.6;color:var(--ink);background:var(--soft)}
+.container{width:min(880px,100% - 40px);margin:auto}
+.site-header{background:#fff;border-bottom:1px solid var(--border)}
+.header-inner{height:68px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;font-weight:800;font-size:1.2rem}
+.brand-mark{display:grid;place-items:center;width:34px;height:34px;border-radius:9px;color:#fff;background:linear-gradient(135deg,#1d4ed8,#3b82f6)}
+.nav a,.breadcrumb a{color:var(--slate);text-decoration:none}
+main{flex:1;padding:42px 0 64px}
+.breadcrumb{margin-bottom:16px;color:var(--muted);font-size:.84rem}
+h1{font-size:clamp(1.8rem,5vw,2.35rem);line-height:1.2;letter-spacing:-1px;margin-bottom:9px}
+.page-sub{max-width:680px;color:var(--slate);margin-bottom:28px}
+.tool-card{padding:clamp(20px,5vw,38px);background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:0 8px 24px -8px #0b1e3a14;text-align:center}
+.status{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;margin-bottom:20px;border-radius:999px;background:#e2e8f0;color:#475569;font-size:.84rem;font-weight:700}
+.status:before{content:"";width:8px;height:8px;border-radius:50%;background:#94a3b8}
+.status.active{color:#166534;background:#dcfce7}
+.status.active:before{background:#22c55e}
+.status.error{color:#991b1b;background:#fee2e2}
+.status.error:before{background:#ef4444}
+.visualizer-wrap{padding:16px;margin-bottom:22px;border-radius:14px;background:var(--soft);border:1px solid var(--border)}
+canvas{display:block;width:100%;height:112px;border-radius:8px;background:#0f172a}
+.actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+button{border:0;border-radius:11px;padding:13px 22px;min-height:48px;font:inherit;font-weight:700;cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}
+.primary{color:#fff;background:var(--primary)}
+.danger{color:#fff;background:#dc2626}
+.control-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:26px;text-align:left}
+.control{padding:18px;background:var(--soft);border:1px solid var(--border);border-radius:14px}
+.control label{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px;font-weight:700;font-size:.93rem}
+.control output{color:var(--primary);white-space:nowrap}
+input[type=range]{width:100%;accent-color:var(--primary);cursor:pointer}
+.hint{display:block;margin-top:8px;color:var(--muted);font-size:.78rem}
+.instructions{margin-top:24px;padding:20px;border:1px solid var(--border);border-radius:14px;background:#fbfdff;text-align:left}
+.instructions h2{margin-bottom:10px;font-size:1.05rem}
+.instructions ol{padding-left:20px;color:var(--slate);font-size:.9rem}
+.instructions li+li{margin-top:8px}
+.notice{margin-top:14px;padding:13px 14px;border-radius:10px;color:#854d0e;background:#fffbeb;border:1px solid #fde68a;font-size:.84rem}
+.ad-slot{margin:30px auto;padding:16px;max-width:970px;text-align:center;border:1px dashed #d6dee8;border-radius:12px;color:#9aa8b9;background:#fff;font-size:.8rem}
+.site-footer{padding:26px 0;color:#8fa1b8;background:var(--ink);font-size:.82rem}
+.footer-inner{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.site-footer a{color:#b0c0d4;text-decoration:none}
+@media(max-width:640px){.control-grid{grid-template-columns:1fr}main{padding-top:30px}}
+</style>
 </head>
 <body>
-  <header class="site-header">
-    <div class="container header-inner">
-      <a class="brand" href="https://www.freetools4u.xyz/">
-        <span class="brand-mark">F</span><span>FreeTools4U</span>
-      </a>
-      <nav class="nav"><a href="https://www.freetools4u.xyz/">All Tools</a></nav>
-    </div>
-  </header>
 
-  <main>
-    <div class="container">
-      <div class="breadcrumb"><a href="/">Home</a> › <span>Volume Optimizer</span></div>
-      <h1>Volume Optimizer</h1>
-      <p class="page-sub">Boost audio from a supported browser tab beyond its original playback level. Adjust amplification and peak control in real time.</p>
+<header class="site-header">
+<div class="container header-inner">
+<a class="brand" href="https://www.freetools4u.xyz/">
+<span class="brand-mark">F</span><span>FreeTools4U</span>
+</a>
+<nav class="nav"><a href="https://www.freetools4u.xyz/">All Tools</a></nav>
+</div>
+</header>
 
-      <section class="tool-card" aria-label="Volume optimizer controls">
-        <div class="status" id="status" role="status" aria-live="polite">Inactive</div>
-        <div class="visualizer-wrap">
-          <canvas id="visualizer" width="760" height="112" aria-label="Audio level visualizer"></canvas>
-        </div>
+<main>
+<div class="container">
+<div class="breadcrumb"><a href="/">Home</a> › <span>Volume Optimizer</span></div>
+<h1>Volume Optimizer</h1>
+<p class="page-sub">Boost audio from a supported browser tab beyond its original playback level. Adjust amplification and peak control in real time.</p>
 
-        <div class="actions">
-          <button class="primary" id="startBtn" type="button">Select browser tab audio</button>
-          <button class="danger" id="stopBtn" type="button" hidden>Stop boosting</button>
-        </div>
+<section class="tool-card">
+<div class="status" id="status" role="status" aria-live="polite">Inactive</div>
 
-        <div class="control-grid">
-          <div class="control">
-            <label for="volumeSlider">Volume boost <output id="volumeValue" for="volumeSlider">100%</output></label>
-            <input id="volumeSlider" type="range" min="100" max="250" value="100" step="5">
-            <span class="hint">100% is the captured tab's original digital level. Increase gradually; high levels can still sound distorted.</span>
-          </div>
-          <div class="control">
-            <label for="compressionSlider">Peak control <output id="compressionValue" for="compressionSlider">Light</output></label>
-            <input id="compressionSlider" type="range" min="0" max="6" value="1" step="1">
-            <span class="hint">Start with Light or Off. Strong compression can make background hiss and sharp sounds more noticeable.</span>
-          </div>
-        </div>
+<div class="visualizer-wrap">
+<canvas id="visualizer" width="760" height="112"></canvas>
+</div>
 
-        <div class="instructions">
-          <h2>How to use</h2>
-          <ol>
-            <li>Open the video or audio in a separate browser tab.</li>
-            <li>Return here and select <strong>Select browser tab audio</strong>.</li>
-            <li>In the browser sharing picker, select the media tab and enable <strong>Share tab audio</strong>.</li>
-            <li>Start at 100%, then raise the boost gradually until the level is comfortable.</li>
-            <li>Select <strong>Stop boosting</strong> before choosing another source.</li>
-          </ol>
-          <div class="notice">
-            <strong>Browser-only limitation:</strong> This web tool processes audio that the browser allows it to capture. It cannot directly control or capture every Windows desktop app. The optimizer asks Chrome to suppress the captured tab's original local playback to help prevent duplicate audio and echo. If your browser does not support that option, lower or mute the original tab's local output if possible.
-          </div>
-        </div>
-      </section>
+<div class="actions">
+<button class="primary" id="startBtn">Select browser tab audio</button>
+<button class="danger" id="stopBtn" hidden>Stop boosting</button>
+</div>
 
-      <div class="ad-slot"><span>Advertisement</span></div>
-    </div>
-  </main>
+<div class="control-grid">
+<div class="control">
+<label for="volumeSlider">Volume boost <output id="volumeValue">100%</output></label>
+<input id="volumeSlider" type="range" min="100" max="250" value="100" step="5">
+<span class="hint">100% is the captured tab's original digital level. Increase gradually; high levels can still sound distorted.</span>
+</div>
 
-  <footer class="site-footer">
-    <div class="container footer-inner">
-      <span>© 2026 <a href="https://www.freetools4u.xyz/">FreeTools4U.xyz</a></span>
-      <span><a href="#">Privacy</a> · <a href="#">Terms</a></span>
-    </div>
-  </footer>
+<div class="control">
+<label for="compressionSlider">Peak control <output id="compressionValue">Light</output></label>
+<input id="compressionSlider" type="range" min="0" max="6" value="1" step="1">
+<span class="hint">Start with Light or Off. Strong compression can make background hiss and sharp sounds more noticeable.</span>
+</div>
+</div>
 
-  <script>
-    (() => {
-      "use strict";
+<div class="instructions">
+<h2>How to use</h2>
+<ol>
+<li>Open the video or audio in a separate browser tab.</li>
+<li>Return here and select <strong>Select browser tab audio</strong>.</li>
+<li>In the browser sharing picker, select the media tab and enable <strong>Share tab audio</strong>.</li>
+<li>Start at 100%, then raise the boost gradually.</li>
+<li>Select <strong>Stop boosting</strong> before choosing another source.</li>
+</ol>
+<div class="notice">
+<strong>Browser-only limitation:</strong> This tool processes audio that your browser allows it to capture. It cannot directly control every Windows desktop application. The original tab may continue playing alongside the processed audio, so use headphones if you hear duplicate playback or echo.
+</div>
+</div>
+</section>
 
-      const startBtn = document.getElementById("startBtn");
-      const stopBtn = document.getElementById("stopBtn");
-      const statusEl = document.getElementById("status");
-      const volumeSlider = document.getElementById("volumeSlider");
-      const volumeValue = document.getElementById("volumeValue");
-      const compressionSlider = document.getElementById("compressionSlider");
-      const compressionValue = document.getElementById("compressionValue");
-      const canvas = document.getElementById("visualizer");
-      const canvasContext = canvas.getContext("2d");
+<div class="ad-slot">Advertisement</div>
+</div>
+</main>
 
-      let audioContext = null;
-      let mediaStream = null;
-      let sourceNode = null;
-      let gainNode = null;
-      let compressorNode = null;
-      let analyserNode = null;
-      let animationFrameId = null;
-      let starting = false;
+<footer class="site-footer">
+<div class="container footer-inner">
+<span>© 2026 <a href="https://www.freetools4u.xyz/">FreeTools4U.xyz</a></span>
+<span><a href="#">Privacy</a> · <a href="#">Terms</a></span>
+</div>
+</footer>
 
-      function setStatus(message, state = "") {
-        statusEl.textContent = message;
-        statusEl.className = `status ${state}`.trim();
-      }
+<script>
+(() => {
+"use strict";
 
-      function updateVolume() {
-        const percent = Number(volumeSlider.value);
-        volumeValue.textContent = `${percent}%`;
-        if (gainNode && audioContext) {
-          gainNode.gain.setTargetAtTime(percent / 100, audioContext.currentTime, 0.04);
-        }
-      }
+const startBtn = document.getElementById("startBtn");
+const stopBtn = document.getElementById("stopBtn");
+const statusEl = document.getElementById("status");
+const volumeSlider = document.getElementById("volumeSlider");
+const volumeValue = document.getElementById("volumeValue");
+const compressionSlider = document.getElementById("compressionSlider");
+const compressionValue = document.getElementById("compressionValue");
+const canvas = document.getElementById("visualizer");
+const ctx = canvas.getContext("2d");
 
-      function updateCompression() {
-        const amount = Number(compressionSlider.value);
-        compressionValue.textContent = amount === 0 ? "Off" : amount <= 2 ? "Light" : amount <= 4 ? "Moderate" : "Strong";
+let audioContext = null;
+let mediaStream = null;
+let sourceNode = null;
+let gainNode = null;
+let compressorNode = null;
+let analyserNode = null;
+let animationFrame = null;
+let starting = false;
 
-        if (!compressorNode || !audioContext) return;
-        const now = audioContext.currentTime;
+function setStatus(message,state=""){
+  statusEl.textContent=message;
+  statusEl.className=("status "+state).trim();
+}
 
-        if (amount === 0) {
-          compressorNode.threshold.setTargetAtTime(0, now, 0.05);
-          compressorNode.ratio.setTargetAtTime(1, now, 0.05);
-          compressorNode.knee.setTargetAtTime(0, now, 0.05);
-          return;
-        }
+function updateVolume(){
+  const value=Number(volumeSlider.value);
+  volumeValue.textContent=value+"%";
+  if(gainNode && audioContext){
+    gainNode.gain.setTargetAtTime(value/100,audioContext.currentTime,0.04);
+  }
+}
 
-        compressorNode.threshold.setTargetAtTime(-8 - amount * 1.5, now, 0.08);
-        compressorNode.ratio.setTargetAtTime(1.2 + amount * 0.35, now, 0.08);
-        compressorNode.knee.setTargetAtTime(12, now, 0.08);
-      }
+function updateCompression(){
+  const amount=Number(compressionSlider.value);
+  compressionValue.textContent=amount===0?"Off":amount<=2?"Light":amount<=4?"Moderate":"Strong";
 
-      function resizeCanvas() {
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        const width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
-        const height = Math.max(1, Math.floor(canvas.clientHeight * dpr));
-        if (canvas.width !== width || canvas.height !== height) {
-          canvas.width = width;
-          canvas.height = height;
-        }
-      }
+  if(!compressorNode || !audioContext)return;
 
-      function drawVisualizer() {
-        if (!analyserNode) return;
-        const samples = new Uint8Array(analyserNode.frequencyBinCount);
+  const now=audioContext.currentTime;
 
-        const draw = () => {
-          if (!analyserNode) return;
-          animationFrameId = requestAnimationFrame(draw);
-          resizeCanvas();
-          analyserNode.getByteTimeDomainData(samples);
+  if(amount===0){
+    compressorNode.threshold.setTargetAtTime(0,now,0.05);
+    compressorNode.ratio.setTargetAtTime(1,now,0.05);
+    compressorNode.knee.setTargetAtTime(0,now,0.05);
+  }else{
+    compressorNode.threshold.setTargetAtTime(-8-amount*1.5,now,0.08);
+    compressorNode.ratio.setTargetAtTime(1.2+amount*0.35,now,0.08);
+    compressorNode.knee.setTargetAtTime(12,now,0.08);
+  }
+}
 
-          const width = canvas.width;
-          const height = canvas.height;
-          canvasContext.clearRect(0, 0, width, height);
-          canvasContext.fillStyle = "#0f172a";
-          canvasContext.fillRect(0, 0, width, height);
-          canvasContext.lineWidth = Math.max(2, width / 380);
-          canvasContext.strokeStyle = "#60a5fa";
-          canvasContext.beginPath();
+function resizeCanvas(){
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const width=Math.max(1,Math.floor(canvas.clientWidth*dpr));
+  const height=Math.max(1,Math.floor(canvas.clientHeight*dpr));
+  if(canvas.width!==width || canvas.height!==height){
+    canvas.width=width;
+    canvas.height=height;
+  }
+}
 
-          const slice = width / samples.length;
-          for (let i = 0; i < samples.length; i++) {
-            const x = i * slice;
-            const y = (samples[i] / 255) * height;
-            if (i === 0) canvasContext.moveTo(x, y);
-            else canvasContext.lineTo(x, y);
-          }
-          canvasContext.stroke();
-        };
+function drawVisualizer(){
+  if(!analyserNode)return;
 
-        draw();
-      }
+  const samples=new Uint8Array(analyserNode.frequencyBinCount);
 
-      function stopAudio() {
-        if (animationFrameId !== null) {
-          cancelAnimationFrame(animationFrameId);
-          animationFrameId = null;
-        }
+  function draw(){
+    if(!analyserNode)return;
+    animationFrame=requestAnimationFrame(draw);
+    resizeCanvas();
 
-        if (mediaStream) {
-          for (const track of mediaStream.getTracks()) {
-            track.onended = null;
-            track.stop();
-          }
-          mediaStream = null;
-        }
+    analyserNode.getByteTimeDomainData(samples);
 
-        if (audioContext) {
-          const closingContext = audioContext;
-          audioContext = null;
-          closingContext.close().catch(() => {});
-        }
+    const width=canvas.width;
+    const height=canvas.height;
 
-        sourceNode = null;
-        gainNode = null;
-        compressorNode = null;
-        analyserNode = null;
-        starting = false;
+    ctx.clearRect(0,0,width,height);
+    ctx.fillStyle="#0f172a";
+    ctx.fillRect(0,0,width,height);
+    ctx.lineWidth=Math.max(2,width/380);
+    ctx.strokeStyle="#60a5fa";
+    ctx.beginPath();
 
-        startBtn.hidden = false;
-        startBtn.disabled = false;
-        stopBtn.hidden = true;
-        setStatus("Inactive");
-        resizeCanvas();
-        canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-        canvasContext.fillStyle = "#0f172a";
-        canvasContext.fillRect(0, 0, canvas.width, canvas.height);
-      }
+    const slice=width/samples.length;
 
-      async function startAudio() {
-        if (starting || mediaStream) return;
-        if (!navigator.mediaDevices?.getDisplayMedia) {
-          setStatus("Screen/tab capture is not supported in this browser", "error");
-          return;
-        }
+    for(let i=0;i<samples.length;i++){
+      const x=i*slice;
+      const y=(samples[i]/255)*height;
+      if(i===0)ctx.moveTo(x,y);
+      else ctx.lineTo(x,y);
+    }
 
-        starting = true;
-        startBtn.disabled = true;
-        setStatus("Waiting for source selection…");
+    ctx.stroke();
+  }
 
-        try {
-          const stream = await navigator.mediaDevices.getDisplayMedia({
-            video: true,
-            audio: { suppressLocalAudioPlayback: true },
-            selfBrowserSurface: "exclude",
-            systemAudio: "exclude"
-          });
-          mediaStream = stream;
+  draw();
+}
 
-          const audioTracks = stream.getAudioTracks();
-          if (audioTracks.length === 0) {
-            stopAudio();
-            setStatus("No audio was shared. Select a tab and enable Share tab audio.", "error");
-            return;
-          }
+function stopAudio(){
+  if(animationFrame!==null){
+    cancelAnimationFrame(animationFrame);
+    animationFrame=null;
+  }
 
-          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-          if (!AudioContextClass) {
-            throw new Error("Web Audio API is not available in this browser.");
-          }
+  if(mediaStream){
+    mediaStream.getTracks().forEach(track=>{
+      track.onended=null;
+      track.stop();
+    });
+    mediaStream=null;
+  }
 
-          audioContext = new AudioContextClass({ latencyHint: "interactive" });
-          if (audioContext.state === "suspended") {
-            await audioContext.resume();
-          }
+  if(audioContext){
+    const oldContext=audioContext;
+    audioContext=null;
+    oldContext.close().catch(()=>{});
+  }
 
-          sourceNode = audioContext.createMediaStreamSource(stream);
-          gainNode = audioContext.createGain();
-          compressorNode = audioContext.createDynamicsCompressor();
-          analyserNode = audioContext.createAnalyser();
+  sourceNode=null;
+  gainNode=null;
+  compressorNode=null;
+  analyserNode=null;
+  starting=false;
 
-          compressorNode.attack.value = 0.012;
-          compressorNode.release.value = 0.25;
-          analyserNode.fftSize = 2048;
-          analyserNode.smoothingTimeConstant = 0.72;
+  startBtn.hidden=false;
+  startBtn.disabled=false;
+  stopBtn.hidden=true;
 
-          gainNode.gain.value = Number(volumeSlider.value) / 100;
-          updateCompression();
+  setStatus("Inactive");
+  resizeCanvas();
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle="#0f172a";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+}
 
-          sourceNode.connect(gainNode);
-          gainNode.connect(compressorNode);
-          compressorNode.connect(analyserNode);
-          analyserNode.connect(audioContext.destination);
+async function startAudio(){
+  if(starting || mediaStream)return;
 
-          for (const track of stream.getTracks()) {
-            track.addEventListener("ended", () => {
-              if (mediaStream === stream) stopAudio();
-            }, { once: true });
-          }
+  if(!navigator.mediaDevices?.getDisplayMedia){
+    setStatus("Screen/tab capture is not supported","error");
+    return;
+  }
 
-          startBtn.hidden = true;
-          stopBtn.hidden = false;
-          setStatus("Audio boosting active", "active");
-          starting = false;
-          drawVisualizer();
-        } catch (error) {
-          console.error("Volume Optimizer capture error:", error);
-          stopAudio();
-          if (error?.name === "NotAllowedError") {
-            setStatus("Sharing cancelled or permission denied");
-          } else {
-            setStatus(error?.message || "Could not start audio capture", "error");
-          }
-        } finally {
-          starting = false;
-          if (!mediaStream) startBtn.disabled = false;
-        }
-      }
+  starting=true;
+  startBtn.disabled=true;
+  setStatus("Waiting for source selection…");
 
-      volumeSlider.addEventListener("input", updateVolume);
-      compressionSlider.addEventListener("input", updateCompression);
-      startBtn.addEventListener("click", startAudio);
-      stopBtn.addEventListener("click", stopAudio);
-      window.addEventListener("beforeunload", stopAudio);
+  try{
+    /*
+      IMPORTANT:
+      Keep the original working capture configuration.
+      Do not use suppressLocalAudioPlayback here.
+    */
+    const stream=await navigator.mediaDevices.getDisplayMedia({
+      video:true,
+      audio:true
+    });
 
-      updateVolume();
-      updateCompression();
-      resizeCanvas();
-    })();
-  </script>
+    mediaStream=stream;
+
+    const audioTracks=stream.getAudioTracks();
+
+    if(!audioTracks.length){
+      stopAudio();
+      setStatus("No audio captured. Select a tab and enable Share tab audio.","error");
+      return;
+    }
+
+    const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+
+    if(!AudioContextClass){
+      throw new Error("Web Audio API is unavailable.");
+    }
+
+    audioContext=new AudioContextClass({latencyHint:"interactive"});
+
+    if(audioContext.state==="suspended"){
+      await audioContext.resume();
+    }
+
+    sourceNode=audioContext.createMediaStreamSource(stream);
+    gainNode=audioContext.createGain();
+    compressorNode=audioContext.createDynamicsCompressor();
+    analyserNode=audioContext.createAnalyser();
+
+    compressorNode.attack.value=0.012;
+    compressorNode.release.value=0.25;
+
+    analyserNode.fftSize=2048;
+    analyserNode.smoothingTimeConstant=0.72;
+
+    gainNode.gain.value=Number(volumeSlider.value)/100;
+    updateCompression();
+
+    /*
+      Single audio path:
+      Captured tab -> Gain -> Gentle compressor -> Analyser -> Speakers
+    */
+    sourceNode.connect(gainNode);
+    gainNode.connect(compressorNode);
+    compressorNode.connect(analyserNode);
+    analyserNode.connect(audioContext.destination);
+
+    stream.getTracks().forEach(track=>{
+      track.addEventListener("ended",()=>{
+        if(mediaStream===stream)stopAudio();
+      },{once:true});
+    });
+
+    startBtn.hidden=true;
+    stopBtn.hidden=false;
+    setStatus("Audio boosting active","active");
+
+    starting=false;
+    drawVisualizer();
+
+  }catch(error){
+    console.error("Volume Optimizer error:",error);
+    stopAudio();
+
+    if(error.name==="NotAllowedError"){
+      setStatus("Sharing cancelled or permission denied");
+    }else{
+      setStatus(error.message||"Could not start audio capture","error");
+    }
+  }finally{
+    starting=false;
+    if(!mediaStream)startBtn.disabled=false;
+  }
+}
+
+volumeSlider.addEventListener("input",updateVolume);
+compressionSlider.addEventListener("input",updateCompression);
+startBtn.addEventListener("click",startAudio);
+stopBtn.addEventListener("click",stopAudio);
+window.addEventListener("beforeunload",stopAudio);
+
+updateVolume();
+updateCompression();
+resizeCanvas();
+
+})();
+</script>
 </body>
 </html>
