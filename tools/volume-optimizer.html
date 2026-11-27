@@ -254,6 +254,7 @@
     let mediaStream = null;
     let sourceNode = null;
     let highpassNode = null;
+    let humCutNode = null;
     let compressorNode = null;
     let postGainNode = null;
     let safetyCompressor = null;
@@ -263,8 +264,9 @@
     function applyCompressionSettings(val) {
       if (!compressorNode || !audioContext) return;
       const now = audioContext.currentTime;
-      const threshold = -14 - (val * 1.1);
-      const ratio = 1.2 + (val * 0.45);
+      // Keep threshold higher (-10 dB to -19 dB) so paused/quiet hum is not pulled up
+      const threshold = -10 - (val * 0.9);
+      const ratio = 1.15 + (val * 0.35); // 1.5:1 to 4.65:1
       const knee = 24;
 
       compressorNode.threshold.setTargetAtTime(threshold, now, 0.03);
@@ -320,15 +322,23 @@
 
         sourceNode = audioContext.createMediaStreamSource(mediaStream);
 
-        // 85 Hz high-pass trims 50/60 Hz mains hum and low-end rumble on Window/system captures
+        // 90 Hz high-pass trims low hum/rumble
         highpassNode = audioContext.createBiquadFilter();
         highpassNode.type = 'highpass';
-        highpassNode.frequency.value = 85;
+        highpassNode.frequency.value = 90;
         highpassNode.Q.value = 0.7;
 
+        // Subtle cut at 140 Hz reduces boxy/hum resonance visible on left visualizer bars
+        humCutNode = audioContext.createBiquadFilter();
+        humCutNode.type = 'peaking';
+        humCutNode.frequency.value = 140;
+        humCutNode.Q.value = 1.8;
+        humCutNode.gain.value = -3.5;
+
+        // Faster release prevents compressor tail/echo smearing on loud-to-quiet transitions
         compressorNode = audioContext.createDynamicsCompressor();
-        compressorNode.attack.value = 0.02;
-        compressorNode.release.value = 0.3;
+        compressorNode.attack.value = 0.015;
+        compressorNode.release.value = 0.16;
         applyCompressionSettings(parseInt(compSlider.value, 10));
 
         postGainNode = audioContext.createGain();
@@ -339,14 +349,15 @@
         safetyCompressor.knee.value = 6;
         safetyCompressor.ratio.value = 10;
         safetyCompressor.attack.value = 0.003;
-        safetyCompressor.release.value = 0.08;
+        safetyCompressor.release.value = 0.06;
 
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
         analyser.smoothingTimeConstant = 0.84;
 
         sourceNode.connect(highpassNode);
-        highpassNode.connect(compressorNode);
+        highpassNode.connect(humCutNode);
+        humCutNode.connect(compressorNode);
         compressorNode.connect(postGainNode);
         postGainNode.connect(safetyCompressor);
         safetyCompressor.connect(analyser);
@@ -392,6 +403,7 @@
 
       sourceNode = null;
       highpassNode = null;
+      humCutNode = null;
       compressorNode = null;
       postGainNode = null;
       safetyCompressor = null;
