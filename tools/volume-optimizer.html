@@ -78,7 +78,7 @@
       width: 100%; height: 120px; background: #0f172a; border-radius: 8px;
       display: block;
     }
-    
+
     .status-badge {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 6px 16px; border-radius: 100px; font-size: 0.85rem; font-weight: 600;
@@ -171,7 +171,7 @@
       <p class="page-sub">Boost quiet audio and normalize loud spikes in real-time directly in your browser.</p>
 
       <div class="tool-card">
-        
+
         <div class="status-badge" id="statusBadge">
           <div class="dot"></div> <span id="statusText">Inactive</span>
         </div>
@@ -186,40 +186,39 @@
         <div style="margin-top: 32px; display: flex; flex-direction: column; gap: 20px;">
           <div class="control-group">
             <label>Volume Boost <span id="volumeVal">150%</span></label>
-            <input type="range" id="volumeSlider" min="100" max="300" value="150" step="10">
-            <span class="control-hint">Increases the overall output volume.</span>
+            <input type="range" id="volumeSlider" min="100" max="250" value="150" step="5">
+            <span class="control-hint">Smoothly boosts output volume. Values above 200% may clip on already loud tracks.</span>
           </div>
 
           <div class="control-group">
             <label>Compression <span id="compVal">Normal</span></label>
-            <input type="range" id="compSlider" min="1" max="10" value="5" step="1">
-            <span class="control-hint">Squashes loud spikes so you can turn the volume up higher without distortion.</span>
+            <input type="range" id="compSlider" min="1" max="10" value="4" step="1">
+            <span class="control-hint">Evens out loud peaks without over-crushing quiet background noise.</span>
           </div>
         </div>
 
-        <!-- New Instructions Section -->
         <div class="instructions">
           <h3>📖 How to use this tool</h3>
-          
+
           <ul>
             <li>
               <span class="step-num">1</span>
               <div>
-                <strong>For Browser Tabs (Best Experience)</strong>
-                Click "Select Audio to Boost", choose the <strong>Chrome Tab</strong> playing your video/music, and ensure <strong>"Share tab audio"</strong> is checked.
+                <strong>Select Another Browser Tab (Recommended)</strong>
+                Click "Select Audio to Boost", pick the <strong>other tab</strong> playing your video or music, and check <strong>"Share tab audio"</strong>. Never share this optimizer tab itself.
               </div>
             </li>
             <li>
               <span class="step-num">2</span>
               <div>
-                <strong>For Local Software (VLC, OBS, Games)</strong>
-                Click "Select Audio to Boost", choose <strong>"Entire Screen"</strong>, and check <strong>"Share system audio"</strong> at the bottom.
+                <strong>Monitor & Adjust Gradually</strong>
+                Start around 130%–160% boost with Light or Normal compression. High compression + high boost can amplify subtle background hum or hiss.
               </div>
             </li>
           </ul>
 
           <div class="warning-box">
-            <strong>⚠️ Important for Local Software:</strong> Browsers mute the captured audio to prevent digital feedback loops (that "machine noise"). If you are capturing "Entire Screen", the audio will play normally on your computer, but the volume sliders on this page will <em>not</em> affect what you hear unless you use a virtual audio cable (like VB-Audio). <strong>This tool works perfectly and applies live boosts for Browser Tabs.</strong>
+            <strong>⚠️ Avoiding Feedback & "Machine Noise":</strong> Do not select this optimizer tab as the audio source, and avoid sharing <em>Entire Screen</em> system audio unless you use a dedicated virtual audio route—double-routed audio causes metallic ringing, phasing, or buzzing.
           </div>
         </div>
 
@@ -240,7 +239,6 @@
   </footer>
 
   <script>
-    // DOM Elements
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
     const statusBadge = document.getElementById('statusBadge');
@@ -252,116 +250,153 @@
     const canvas = document.getElementById('visualizer');
     const ctx = canvas.getContext('2d');
 
-    // Audio Context Variables
     let audioContext = null;
     let mediaStream = null;
     let sourceNode = null;
-    let gainNode = null;
+    let highpassNode = null;
+    let preGainNode = null;
     let compressorNode = null;
+    let postGainNode = null;
     let analyser = null;
     let animationFrame = null;
 
-    // UI Updates
+    function applyCompressionSettings(val) {
+      if (!compressorNode || !audioContext) return;
+      const now = audioContext.currentTime;
+      // Keep thresholds reasonable so quiet noise floor isn't pumped into distortion
+      const threshold = -14 - (val * 1.4); // -15.4 dB to -28 dB
+      const ratio = 1.5 + (val * 0.75);    // 2.25:1 to 9:1
+      const knee = 18;
+
+      compressorNode.threshold.setTargetAtTime(threshold, now, 0.02);
+      compressorNode.ratio.setTargetAtTime(ratio, now, 0.02);
+      compressorNode.knee.setTargetAtTime(knee, now, 0.02);
+    }
+
+    function applyVolumeSettings(percent) {
+      if (!postGainNode || !audioContext) return;
+      const now = audioContext.currentTime;
+      postGainNode.gain.setTargetAtTime(percent / 100, now, 0.02);
+    }
+
     volumeSlider.addEventListener('input', (e) => {
-      const val = e.target.value;
+      const val = parseInt(e.target.value, 10);
       volumeVal.textContent = val + '%';
-      if (gainNode) gainNode.gain.value = val / 100;
+      applyVolumeSettings(val);
     });
 
     compSlider.addEventListener('input', (e) => {
-      const val = parseInt(e.target.value);
+      const val = parseInt(e.target.value, 10);
       if (val <= 3) compVal.textContent = 'Light';
       else if (val <= 7) compVal.textContent = 'Normal';
-      else compVal.textContent = 'Extreme';
-      
-      if (compressorNode) {
-        compressorNode.ratio.value = 2 + (val * 1.8);
-        compressorNode.threshold.value = -10 - (val * 4); 
-      }
+      else compVal.textContent = 'Strong';
+      applyCompressionSettings(val);
     });
 
     async function startAudio() {
       try {
-        // 1. Request Display Media (System Audio)
+        // Use native device sample rate to avoid sample-rate conversion artifacts
         mediaStream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
           audio: {
             echoCancellation: false,
             noiseSuppression: false,
             autoGainControl: false,
-            channelCount: 2,
-            sampleRate: 48000
+            channelCount: 2
           }
         });
 
-        if (mediaStream.getAudioTracks().length === 0) {
-          alert("No audio track found. Please make sure to check 'Share tab audio' or 'Share system audio' when selecting.");
+        const audioTracks = mediaStream.getAudioTracks();
+        if (audioTracks.length === 0) {
+          alert("No audio track found. Please select a tab and check 'Share tab audio'.");
           stopAudio();
           return;
         }
 
-        // 2. Initialize Audio Context
-        audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
-        
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioCtx();
+
         if (audioContext.state === 'suspended') {
           await audioContext.resume();
         }
 
-        // 3. Create Nodes
         sourceNode = audioContext.createMediaStreamSource(mediaStream);
-        
-        gainNode = audioContext.createGain();
-        gainNode.gain.value = volumeSlider.value / 100;
+
+        // Gentle high-pass filter trims sub-bass rumble/hum without thinning voices or music
+        highpassNode = audioContext.createBiquadFilter();
+        highpassNode.type = 'highpass';
+        highpassNode.frequency.value = 45;
+        highpassNode.Q.value = 0.7;
+
+        // Slight pre-trim keeps peaks predictable before compression
+        preGainNode = audioContext.createGain();
+        preGainNode.gain.value = 0.85;
 
         compressorNode = audioContext.createDynamicsCompressor();
-        const compLevel = parseInt(compSlider.value);
-        
-        compressorNode.threshold.value = -10 - (compLevel * 4);
-        compressorNode.ratio.value = 2 + (compLevel * 1.8);
-        compressorNode.knee.value = 10;
-        compressorNode.attack.value = 0.01;
-        compressorNode.release.value = 0.25;
+        compressorNode.attack.value = 0.015;
+        compressorNode.release.value = 0.22;
+        applyCompressionSettings(parseInt(compSlider.value, 10));
+
+        postGainNode = audioContext.createGain();
+        postGainNode.gain.value = parseInt(volumeSlider.value, 10) / 100;
 
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.82;
 
-        // 4. Connect Nodes
-        sourceNode.connect(gainNode);
-        gainNode.connect(compressorNode);
-        compressorNode.connect(analyser);
+        // Signal chain: Source -> Highpass -> PreGain -> Compressor -> PostGain -> Analyser -> Output
+        sourceNode.connect(highpassNode);
+        highpassNode.connect(preGainNode);
+        preGainNode.connect(compressorNode);
+        compressorNode.connect(postGainNode);
+        postGainNode.connect(analyser);
         analyser.connect(audioContext.destination);
 
-        // 5. Update UI
         startBtn.style.display = 'none';
         stopBtn.style.display = 'inline-flex';
         statusBadge.classList.add('active');
         statusText.textContent = 'Active - Routing Audio';
 
-        // 6. Handle user clicking "Stop Sharing" on the browser native UI
-        mediaStream.getVideoTracks()[0].onended = () => {
-          stopAudio();
-        };
+        const videoTrack = mediaStream.getVideoTracks()[0];
+        if (videoTrack) {
+          videoTrack.onended = () => stopAudio();
+        }
+        audioTracks[0].onended = () => stopAudio();
 
-        // 7. Start Visualizer
         drawVisualizer();
-
       } catch (err) {
         console.error("Error accessing audio:", err);
+        stopAudio();
         if (err.name !== 'NotAllowedError') {
-          alert("Could not capture audio. Make sure you are using a supported browser (Chrome/Edge) and sharing audio.");
+          alert("Could not capture audio. Make sure you are using a supported browser and sharing tab audio.");
         }
       }
     }
 
     function stopAudio() {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+        animationFrame = null;
+      }
       if (mediaStream) {
-        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream.getTracks().forEach(track => {
+          track.onended = null;
+          track.stop();
+        });
+        mediaStream = null;
       }
       if (audioContext) {
-        audioContext.close();
+        audioContext.close().catch(() => {});
+        audioContext = null;
       }
-      cancelAnimationFrame(animationFrame);
-      
+
+      sourceNode = null;
+      highpassNode = null;
+      preGainNode = null;
+      compressorNode = null;
+      postGainNode = null;
+      analyser = null;
+
       startBtn.style.display = 'inline-flex';
       stopBtn.style.display = 'none';
       statusBadge.classList.remove('active');
@@ -371,26 +406,38 @@
     }
 
     function drawVisualizer() {
+      if (!analyser) return;
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-      const width = canvas.width;
-      const height = canvas.height;
+
+      const syncSize = () => {
+        const w = canvas.offsetWidth || 600;
+        const h = canvas.offsetHeight || 120;
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+      };
+
+      syncSize();
 
       function draw() {
+        if (!analyser) return;
         animationFrame = requestAnimationFrame(draw);
+        syncSize();
+
         analyser.getByteFrequencyData(dataArray);
+        const width = canvas.width;
+        const height = canvas.height;
 
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(0, 0, width, height);
 
         const barWidth = (width / bufferLength) * 2.5;
-        let barHeight;
         let x = 0;
 
         for (let i = 0; i < bufferLength; i++) {
-          barHeight = (dataArray[i] / 255) * height;
+          const barHeight = (dataArray[i] / 255) * height;
           const gradient = ctx.createLinearGradient(0, height - barHeight, 0, height);
           gradient.addColorStop(0, '#3b82f6');
           gradient.addColorStop(1, '#1d4ed8');
@@ -399,6 +446,7 @@
           x += barWidth + 1;
         }
       }
+
       draw();
     }
 
