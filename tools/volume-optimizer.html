@@ -320,23 +320,20 @@
 
         sourceNode = audioContext.createMediaStreamSource(mediaStream);
 
-        // Clean high-pass at 40 Hz to trim sub-bass rumble without losing warmth
+        // 85 Hz high-pass trims 50/60 Hz mains hum and low-end rumble on Window/system captures
         highpassNode = audioContext.createBiquadFilter();
         highpassNode.type = 'highpass';
-        highpassNode.frequency.value = 40;
+        highpassNode.frequency.value = 85;
         highpassNode.Q.value = 0.7;
 
-        // Smooth leveler before output gain
         compressorNode = audioContext.createDynamicsCompressor();
         compressorNode.attack.value = 0.02;
         compressorNode.release.value = 0.3;
         applyCompressionSettings(parseInt(compSlider.value, 10));
 
-        // Direct volume boost
         postGainNode = audioContext.createGain();
         postGainNode.gain.value = parseInt(volumeSlider.value, 10) / 100;
 
-        // Peak safety limiter
         safetyCompressor = audioContext.createDynamicsCompressor();
         safetyCompressor.threshold.value = -1.0;
         safetyCompressor.knee.value = 6;
@@ -348,7 +345,6 @@
         analyser.fftSize = 256;
         analyser.smoothingTimeConstant = 0.84;
 
-        // Chain: Source -> Highpass -> Compressor -> PostGain -> Limiter -> Analyser -> Output
         sourceNode.connect(highpassNode);
         highpassNode.connect(compressorNode);
         compressorNode.connect(postGainNode);
