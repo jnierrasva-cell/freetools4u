@@ -238,7 +238,7 @@
     </div>
   </footer>
 
-  <script>
+<script>
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
     const statusBadge = document.getElementById('statusBadge');
@@ -254,29 +254,31 @@
     let mediaStream = null;
     let sourceNode = null;
     let highpassNode = null;
+    let lowpassNode = null;
     let preGainNode = null;
     let compressorNode = null;
     let postGainNode = null;
+    let safetyCompressor = null;
     let analyser = null;
     let animationFrame = null;
 
     function applyCompressionSettings(val) {
       if (!compressorNode || !audioContext) return;
       const now = audioContext.currentTime;
-      // Keep thresholds reasonable so quiet noise floor isn't pumped into distortion
-      const threshold = -14 - (val * 1.4); // -15.4 dB to -28 dB
-      const ratio = 1.5 + (val * 0.75);    // 2.25:1 to 9:1
-      const knee = 18;
+      // Smoother threshold & ratio curve to reduce "pumping" on speech
+      const threshold = -12 - (val * 1.1); // -13.1 dB to -23 dB
+      const ratio = 1.2 + (val * 0.45);    // 1.65:1 to 5.7:1
+      const knee = 24;
 
-      compressorNode.threshold.setTargetAtTime(threshold, now, 0.02);
-      compressorNode.ratio.setTargetAtTime(ratio, now, 0.02);
-      compressorNode.knee.setTargetAtTime(knee, now, 0.02);
+      compressorNode.threshold.setTargetAtTime(threshold, now, 0.03);
+      compressorNode.ratio.setTargetAtTime(ratio, now, 0.03);
+      compressorNode.knee.setTargetAtTime(knee, now, 0.03);
     }
 
     function applyVolumeSettings(percent) {
       if (!postGainNode || !audioContext) return;
       const now = audioContext.currentTime;
-      postGainNode.gain.setTargetAtTime(percent / 100, now, 0.02);
+      postGainNode.gain.setTargetAtTime(percent / 100, now, 0.03);
     }
 
     volumeSlider.addEventListener('input', (e) => {
@@ -295,7 +297,6 @@
 
     async function startAudio() {
       try {
-        // Use native device sample rate to avoid sample-rate conversion artifacts
         mediaStream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
           audio: {
@@ -322,34 +323,51 @@
 
         sourceNode = audioContext.createMediaStreamSource(mediaStream);
 
-        // Gentle high-pass filter trims sub-bass rumble/hum without thinning voices or music
+        // Trim low rumble below 40 Hz
         highpassNode = audioContext.createBiquadFilter();
         highpassNode.type = 'highpass';
-        highpassNode.frequency.value = 45;
+        highpassNode.frequency.value = 40;
         highpassNode.Q.value = 0.7;
 
-        // Slight pre-trim keeps peaks predictable before compression
-        preGainNode = audioContext.createGain();
-        preGainNode.gain.value = 0.85;
+        // Gentle low-pass filter to reduce harsh high-frequency "machine" fizz
+        lowpassNode = audioContext.createBiquadFilter();
+        lowpassNode.type = 'lowpass';
+        lowpassNode.frequency.value = 14500;
+        lowpassNode.Q.value = 0.7;
 
+        preGainNode = audioContext.createGain();
+        preGainNode.gain.value = 0.9;
+
+        // Main gentle leveler
         compressorNode = audioContext.createDynamicsCompressor();
-        compressorNode.attack.value = 0.015;
-        compressorNode.release.value = 0.22;
+        compressorNode.attack.value = 0.025;
+        compressorNode.release.value = 0.35;
         applyCompressionSettings(parseInt(compSlider.value, 10));
 
+        // User volume boost stage
         postGainNode = audioContext.createGain();
         postGainNode.gain.value = parseInt(volumeSlider.value, 10) / 100;
 
+        // Fast ceiling limiter to catch hard peaks without harsh digital clipping
+        safetyCompressor = audioContext.createDynamicsCompressor();
+        safetyCompressor.threshold.value = -1.5;
+        safetyCompressor.knee.value = 4;
+        safetyCompressor.ratio.value = 12;
+        safetyCompressor.attack.value = 0.003;
+        safetyCompressor.release.value = 0.08;
+
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
-        analyser.smoothingTimeConstant = 0.82;
+        analyser.smoothingTimeConstant = 0.84;
 
-        // Signal chain: Source -> Highpass -> PreGain -> Compressor -> PostGain -> Analyser -> Output
+        // Signal chain: Source -> Highpass -> PreGain -> Compressor -> Lowpass -> PostGain -> Limiter -> Analyser -> Output
         sourceNode.connect(highpassNode);
         highpassNode.connect(preGainNode);
         preGainNode.connect(compressorNode);
-        compressorNode.connect(postGainNode);
-        postGainNode.connect(analyser);
+        compressorNode.connect(lowpassNode);
+        lowpassNode.connect(postGainNode);
+        postGainNode.connect(safetyCompressor);
+        safetyCompressor.connect(analyser);
         analyser.connect(audioContext.destination);
 
         startBtn.style.display = 'none';
@@ -392,9 +410,11 @@
 
       sourceNode = null;
       highpassNode = null;
+      lowpassNode = null;
       preGainNode = null;
       compressorNode = null;
       postGainNode = null;
+      safetyCompressor = null;
       analyser = null;
 
       startBtn.style.display = 'inline-flex';
