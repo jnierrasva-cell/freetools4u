@@ -1,1 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FreeTools4U — Professional Free Online Tools</title>
+  <meta name="description" content="FreeTools4U.xyz — a professional collection of free online tools. Convert PDF to Word, optimize volume, compress images, and more. No sign-up required.">
+  <meta name="keywords" content="free tools, pdf to word, volume optimizer, image compressor, online tools, freetools4u">
+  <meta name="author" content="FreeTools4U">
+  <link rel="canonical" href="https://freetools4u.xyz/">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="FreeTools4U — Professional Free Online Tools">
+  <meta property="og:description" content="A curated collection of free online tools for documents, media, and productivity. No sign-up, no limits.">
+  <meta property="og:url" content="https://freetools4u.xyz/">
+  <meta property="og:type" content="website">
+  
+  <!-- Google AdSense (Replace with your own publisher ID) -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-xxxxxxxxxxxxxxxx" crossorigin="anonymous"></script>
+  
+  <!-- Fonts: Inter for a crisp, professional look -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Reset & base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
+    :root {
+      --ink: #0b1e3a;
+      --ink-light: #1e2f4a;
+      --slate: #4b5a6e;
+      --slate-light: #64748b;
+      --border: #e7ecf2;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --primary: #1d4ed8;
+      --primary-soft: #eef4ff;
+      --accent: #0f6bff;
+      --shadow-sm: 0 1px 2px rgba(11, 30, 58, 0.04);
+      --shadow-md: 0 8px 24px -8px rgba(11, 30, 58, 0.08);
+      --shadow-lg: 0 24px 48px -16px rgba(11, 30, 58, 0.12);
+      --radius-card: 20px;
+      --radius-sm: 12px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--surface);
+      color: var(--ink-light);
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    /* Layout */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 32px;
+      width: 100%;
+    }
+
+    /* ========== HEADER ========== */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      transition: box-shadow 0.2s ease;
+    }
+
+    .site-header.scrolled {
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 72px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink);
+      font-weight: 700;
+      font-size: 1.35rem;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+      border-radius: 10px;
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 800;
+      box-shadow: 0 4px 10px -2px rgba(29, 78, 216, 0.3);
+    }
+
+    .brand span {
+      font-weight: 800;
+    }
+
+    .brand small {
+      font-weight: 500;
+      font-size: 0.7rem;
+      color: var(--slate-light);
+      background: var(--surface-soft);
+      padding: 3px 8px;
+      border-radius: 100px;
+      margin-left: 6px;
+      letter-spacing: 0;
+      border: 1px solid var(--border);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .nav a {
+      text-decoration: none;
+      color: var(--slate);
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: 8px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .nav a:hover {
+      background: var(--surface-soft);
+      color: var(--ink);
+    }
+
+    .nav .nav-cta {
+      background: var(--ink);
+      color: white;
+      font-weight: 600;
+      padding: 9px 20px;
+      border-radius: 10px;
+      margin-left: 8px;
+      box-shadow: 0 2px 6px rgba(11, 30, 58, 0.15);
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .nav .nav-cta:hover {
+      background: #162f52;
+      color: white;
+    }
+
+    /* ========== HERO ========== */
+    .hero-section {
+      padding: 80px 0 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-section::before {
+      content: '';
+      position: absolute;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 500px;
+      background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 6px 16px;
+      border-radius: 100px;
+      letter-spacing: 0.2px;
+      margin-bottom: 28px;
+      border: 1px solid rgba(29, 78, 216, 0.12);
+    }
+
+    .hero-eyebrow .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--primary);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .hero-title {
+      font-size: 3.25rem;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.12;
+      color: var(--ink);
+      max-width: 820px;
+      margin: 0 auto 20px;
+    }
+
+    .hero-title .gradient-text {
+      background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 60%, #06b6d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: 1.15rem;
+      color: var(--slate);
+      max-width: 620px;
+      margin: 0 auto 36px;
+      font-weight: 400;
+      line-height: 1.65;
+    }
+
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 48px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.5px;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--slate-light);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    .stat-divider {
+      width: 1px;
+      background: var(--border);
+      align-self: stretch;
+    }
+
+    /* ========== AD SLOT ========== */
+    .ad-slot {
+      margin: 32px auto;
+      text-align: center;
+      background: var(--surface-soft);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      border: 1px dashed #d6dee8;
+      color: #9aa8b9;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      max-width: 970px;
+    }
+
+    .ad-slot .ad-label {
+      display: block;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #b0bcca;
+      margin-bottom: 6px;
+    }
+
+    /* ========== TOOLS SECTION ========== */
+    .tools-section {
+      padding: 40px 0 72px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .section-head-left h2 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+
+    .section-head-left p {
+      color: var(--slate-light);
+      font-size: 0.92rem;
+      font-weight: 400;
+    }
+
+    .filter-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--slate);
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 7px 14px;
+      border-radius: 100px;
+      cursor: default;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .chip:hover {
+      border-color: #b8c5d6;
+      color: var(--ink);
+    }
+
+    .chip.active {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: white;
+    }
+
+    /* Tool grid */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    /* ========== TOOL CARD ========== */
+    .tool-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .tool-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-3px);
+      border-color: #d0d9e5;
+    }
+
+    .tool-card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .tool-icon-wrap {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface-soft);
+      border-radius: 14px;
+      font-size: 1.55rem;
+      border: 1px solid var(--border);
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .tool-card:hover .tool-icon-wrap {
+      background: var(--primary-soft);
+      border-color: rgba(29, 78, 216, 0.15);
+    }
+
+    .tool-badge {
+      font-size: 0.62rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--slate-light);
+      background: var(--surface-soft);
+      padding: 4px 10px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+    }
+
+    .tool-card h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+
+    .tool-card p {
+      color: var(--slate);
+      font-size: 0.88rem;
+      line-height: 1.55;
+      flex: 1;
+      margin-bottom: 20px;
+    }
+
+    .tool-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .tool-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      text-decoration: none;
+      font-weight: 600;
+      color: var(--primary);
+      font-size: 0.85rem;
+      transition: gap 0.15s;
+    }
+
+    .tool-link:hover {
+      gap: 9px;
+    }
+
+    .tool-link svg {
+      width: 14px;
+      height: 14px;
+      transition: transform 0.15s;
+    }
+
+    .tool-link:hover svg {
+      transform: translateX(2px);
+    }
+
+    .tool-free-tag {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: #15803d;
+    }
+
+    .tool-free-tag::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      background: #22c55e;
+      border-radius: 50%;
+    }
+
+    /* ========== FOOTER ========== */
+    .site-footer {
+      margin-top: auto;
+      background: var(--ink);
+      color: #b0c0d4;
+      padding: 48px 0 32px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .footer-brand {
+      max-width: 280px;
+    }
+
+    .footer-brand .brand {
+      color: white;
+      margin-bottom: 12px;
+    }
+
+    .footer-brand .brand-mark {
+      box-shadow: none;
+    }
+
+    .footer-brand .brand small {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #b0c0d4;
+    }
+
+    .footer-brand p {
+      font-size: 0.85rem;
+      line-height: 1.65;
+      color: #8fa1b8;
+    }
+
+    .footer-col h4 {
+      color: white;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 16px;
+    }
+
+    .footer-col ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .footer-col ul a {
+      color: #8fa1b8;
+      text-decoration: none;
+      font-size: 0.86rem;
+      transition: color 0.15s;
+    }
+
+    .footer-col ul a:hover {
+      color: white;
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 0.8rem;
+      color: #7a8ba3;
+    }
+
+    .footer-bottom a {
+      color: #8fa1b8;
+      text-decoration: none;
+    }
+
+    .footer-bottom a:hover {
+      color: white;
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 1024px) {
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container { padding: 0 20px; }
+      .hero-title { font-size: 2.4rem; letter-spacing: -1px; }
+      .hero-subtitle { font-size: 1rem; }
+      .hero-stats { gap: 28px; }
+      .section-head { flex-direction: column; align-items: flex-start; }
+      .nav a:not(.nav-cta) { display: none; }
+      .tools-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+      .brand small { display: none; }
+    }
+
+    @media (max-width: 540px) {
+      .hero-title { font-size: 1.9rem; letter-spacing: -0.5px; }
+      .hero-section { padding: 56px 0 32px; }
+      .stat-divider { display: none; }
+      .hero-stats { gap: 20px; }
+      .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header class="site-header" id="siteHeader">
+    <div class="container header-inner">
+      <a href="https://freetools4u.xyz/" class="brand">
+        <span class="brand-mark">F</span>
+        <span>FreeTools4U</span>
+        <small>.xyz</small>
+      </a>
+      <nav class="nav">
+        <a href="#tools">All Tools</a>
+        <a href="#">Categories</a>
+        <a href="#">About</a>
+        <a href="#" class="nav-cta">AdSense Info</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- ========== HERO ========== -->
+    <section class="hero-section">
+      <div class="container">
+        <div class="hero-eyebrow">
+          <span class="dot"></span>
+          Trusted by 100,000+ users every month
+        </div>
+        <h1 class="hero-title">
+          Professional tools.<br>
+          <span class="gradient-text">Zero cost. No limits.</span>
+        </h1>
+        <p class="hero-subtitle">
+          A curated collection of fast, reliable utilities for documents, media, and everyday tasks — built for professionals and students alike.
+        </p>
+
+        <div class="hero-stats">
+          <div class="stat">
+            <div class="stat-value">12+</div>
+            <div class="stat-label">Free tools</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <div class="stat-value">100%</div>
+            <div class="stat-label">Free forever</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <div class="stat-value">0</div>
+            <div class="stat-label">Sign-up required</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== AD SLOT (TOP) ========== -->
+    <div class="container">
+      <div class="ad-slot">
+        <span class="ad-label">Advertisement</span>
+        <!-- Replace with your AdSense code -->
+        <span>728 × 90 leaderboard ad unit — paste your AdSense snippet here</span>
+      </div>
+    </div>
+
+    <!-- ========== TOOLS MARKETPLACE ========== -->
+    <section class="tools-section" id="tools">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-head-left">
+            <h2>All tools</h2>
+            <p>Every utility you need — free, fast, and privacy-friendly.</p>
+          </div>
+          <div class="filter-chips">
+            <span class="chip active">All</span>
+            <span class="chip">Documents</span>
+            <span class="chip">Audio</span>
+            <span class="chip">Images</span>
+            <span class="chip">Utilities</span>
+          </div>
+        </div>
+
+        <div class="tools-grid">
+
+          <!-- Tool 1: PDF to Word -->
+          <article class="tool-card">
+            <div class="tool-card-top">
+              <div class="tool-icon-wrap">📄</div>
+              <span class="tool-badge">Document</span>
+            </div>
+            <h3>PDF to Word</h3>
+            <p>Convert any PDF into an editable Word document with perfect layout retention and accurate formatting.</p>
+            <div class="tool-card-footer">
+              <a href="https://freetools4u.xyz/tools/pdf-to-word" class="tool-link">
+                Open tool
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.333 8h9.334M8.667 3.333 13.333 8l-4.666 4.667" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <span class="tool-free-tag">Free</span>
+            </div>
+          </article>
+
+          <!-- Tool 2: Volume Optimizer -->
+          <article class="tool-card">
+            <div class="tool-card-top">
+              <div class="tool-icon-wrap">🔊</div>
+              <span class="tool-badge">Audio</span>
+            </div>
+            <h3>Volume Optimizer</h3>
+            <p>Normalize audio levels and boost quiet sections automatically. Ideal for podcasts and voice recordings.</p>
+            <div class="tool-card-footer">
+              <a href="https://freetools4u.xyz/tools/volume-optimizer" class="tool-link">
+                Open tool
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.333 8h9.334M8.667 3.333 13.333 8l-4.666 4.667" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <span class="tool-free-tag">Free</span>
+            </div>
+          </article>
+
+          <!-- Tool 3: Image Compressor -->
+          <article class="tool-card">
+            <div class="tool-card-top">
+              <div class="tool-icon-wrap">🖼️</div>
+              <span class="tool-badge">Images</span>
+            </div>
+            <h3>Image Compressor</h3>
+            <p>Reduce image file size up to 80% without visible quality loss. Supports JPG, PNG, and WebP.</p>
+            <div class="tool-card-footer">
+              <a href="https://freetools4u.xyz/tools/image-compressor" class="tool-link">
+                Open tool
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.333 8h9.334M8.667 3.333 13.333 8l-4.666 4.667" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <span class="tool-free-tag">Free</span>
+            </div>
+          </article>
+
+          <!-- Tool 4: Video to MP3 -->
+          <article class="tool-card">
+            <div class="tool-card-top">
+              <div class="tool-icon-wrap">🎬</div>
+              <span class="tool-badge">Audio</span>
+            </div>
+            <h3>Video to MP3</h3>
+            <p>Extract high-quality MP3 audio from any video file in seconds. No watermarks, no file-size limits.</p>
+            <div class="tool-card-footer">
+              <a href="https://freetools4u.xyz/tools/video-to-mp3" class="tool-link">
+                Open tool
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.333 8h9.334M8.667 3.333 13.333 8l-4.666 4.667" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <span class="tool-free-tag">Free</span>
+            </div>
+          </article>
+
+          <!-- Tool 5: Word Counter -->
+          <article class="tool-card">
+            <div class="tool-card-top">
+              <div class="tool-icon-wrap">🔤</div>
+              <span class="tool-badge">Text</span>
+            </div>
+            <h3>Word Counter</h3>
+            <p>Count words, characters, sentences, and reading time instantly. Perfect for writers and students.</p>
+            <div class="tool-card-footer">
+              <a href="https://freetools4u.xyz/tools/word-counter" class="tool-link">
+                Open tool
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.333 8h9.334M8.667 3.333 13.333 8l-4.666 4.667" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <span class="tool-free-tag">Free</span>
+            </div>
+          </article>
+
+          <!-- Tool 6: QR Code Generator -->
+          <article class="tool-card">
+            <div class="tool-card-top">
+              <div class="tool-icon-wrap">📱</div>
+              <span class="tool-badge">Utility</span>
+            </div>
+            <h3>QR Code Generator</h3>
+            <p>Create custom QR codes for URLs, text, Wi-Fi, or contact cards. Download as PNG or SVG.</p>
+            <div class="tool-card-footer">
+              <a href="https://freetools4u.xyz/tools/qr-code-generator" class="tool-link">
+                Open tool
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.333 8h9.334M8.667 3.333 13.333 8l-4.666 4.667" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <span class="tool-free-tag">Free</span>
+            </div>
+          </article>
+
+          <!-- Tool 7: Background Remover -->
+          <article class="tool-card">
+            <div class="tool-card-top">
+              <div class="tool-icon-wrap">✂️</div>
+              <span class="tool-badge">Images</span>
+            </div>
+            <h3>Background Remover</h3>
+            <p>Automatically remove backgrounds from images using AI. No editing skills required.</p>
+            <div class="tool-card-footer">
+              <a href="https://freetools4u.xyz/tools/background-remover" class="tool-link">
+                Open tool
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.333 8h9.334M8.667 3.333 13.333 8l-4.666 4.667" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <span class="tool-free-tag">Free</span>
+            </div>
+          </article>
+
+          <!-- Tool 8: JSON Formatter -->
+          <article class="tool-card">
+            <div class="tool-card-top">
+              <div class="tool-icon-wrap">🧩</div>
+              <span class="tool-badge">Developer</span>
+            </div>
+            <h3>JSON Formatter</h3>
+            <p>Format, validate, and beautify JSON instantly. Minify or pretty-print with a single click.</p>
+            <div class="tool-card-footer">
+              <a href="https://freetools4u.xyz/tools/json-formatter" class="tool-link">
+                Open tool
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.333 8h9.334M8.667 3.333 13.333 8l-4.666 4.667" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <span class="tool-free-tag">Free</span>
+            </div>
+          </article>
+
+          <!-- Tool 9: Unit Converter -->
+          <article class="tool-card">
+            <div class="tool-card-top">
+              <div class="tool-icon-wrap">📏</div>
+              <span class="tool-badge">Utility</span>
+            </div>
+            <h3>Unit Converter</h3>
+            <p>Convert length, weight, temperature, and more with complete accuracy and ease.</p>
+            <div class="tool-card-footer">
+              <a href="https://freetools4u.xyz/tools/unit-converter" class="tool-link">
+                Open tool
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.333 8h9.334M8.667 3.333 13.333 8l-4.666 4.667" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <span class="tool-free-tag">Free</span>
+            </div>
+          </article>
+
+          <!-- Tool 10: PDF Merger -->
+          <article class="tool-card">
+            <div class="tool-card-top">
+              <div class="tool-icon-wrap">📚</div>
+              <span class="tool-badge">Document</span>
+            </div>
+            <h3>PDF Merger</h3>
+            <p>Combine multiple PDF files into a single document. Rearrange pages and merge in seconds.</p>
+            <div class="tool-card-footer">
+              <a href="https://freetools4u.xyz/tools/pdf-merger" class="tool-link">
+                Open tool
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.333 8h9.334M8.667 3.333 13.333 8l-4.666 4.667" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <span class="tool-free-tag">Free</span>
+            </div>
+          </article>
+
+          <!-- Tool 11: Text to Speech -->
+          <article class="tool-card">
+            <div class="tool-card-top">
+              <div class="tool-icon-wrap">🗣️</div>
+              <span class="tool-badge">Audio</span>
+            </div>
+            <h3>Text to Speech</h3>
+            <p>Convert written text into natural-sounding audio. Choose from multiple voices and languages.</p>
+            <div class="tool-card-footer">
+              <a href="https://freetools4u.xyz/tools/text-to-speech" class="tool-link">
+                Open tool
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.333 8h9.334M8.667 3.333 13.333 8l-4.666 4.667" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <span class="tool-free-tag">Free</span>
+            </div>
+          </article>
+
+          <!-- Tool 12: Color Picker -->
+          <article class="tool-card">
+            <div class="tool-card-top">
+              <div class="tool-icon-wrap">🎨</div>
+              <span class="tool-badge">Design</span>
+            </div>
+            <h3>Color Picker</h3>
+            <p>Pick colors from images or generate perfect palettes. Get HEX, RGB, and HSL values instantly.</p>
+            <div class="tool-card-footer">
+              <a href="https://freetools4u.xyz/tools/color-picker" class="tool-link">
+                Open tool
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.333 8h9.334M8.667 3.333 13.333 8l-4.666 4.667" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <span class="tool-free-tag">Free</span>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== AD SLOT (MID) ========== -->
+    <div class="container">
+      <div class="ad-slot" style="margin-bottom: 64px;">
+        <span class="ad-label">Advertisement</span>
+        <!-- Replace with your AdSense responsive code -->
+        <span>Responsive in-content ad unit — paste your AdSense snippet here</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="brand">
+            <span class="brand-mark">F</span>
+            <span>FreeTools4U</span>
+            <small>.xyz</small>
+          </div>
+          <p>A professional-grade collection of free online tools for documents, media, and everyday productivity — supported by non-intrusive ads. Visit us at <a href="https://freetools4u.xyz/" style="color:#b0c0d4;text-decoration:underline;">freetools4u.xyz</a>.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Popular Tools</h4>
+          <ul>
+            <li><a href="https://freetools4u.xyz/tools/pdf-to-word">PDF to Word</a></li>
+            <li><a href="https://freetools4u.xyz/tools/image-compressor">Image Compressor</a></li>
+            <li><a href="https://freetools4u.xyz/tools/volume-optimizer">Volume Optimizer</a></li>
+            <li><a href="https://freetools4u.xyz/tools/qr-code-generator">QR Code Generator</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Categories</h4>
+          <ul>
+            <li><a href="#">Documents</a></li>
+            <li><a href="#">Audio &amp; Video</a></li>
+            <li><a href="#">Images</a></li>
+            <li><a href="#">Utilities</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">AdSense Disclosure</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2025 <a href="https://freetools4u.xyz/">FreeTools4U.xyz</a>. All rights reserved.</span>
+        <span>Made for professionals · Free forever</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Subtle header shadow on scroll
+    const header = document.getElementById('siteHeader');
+    window.addEventListener('scroll', () => {
+      header.classList.toggle('scrolled', window.scrollY > 8);
+    }, { passive: true });
+  </script>
+
+</body>
+</html>
