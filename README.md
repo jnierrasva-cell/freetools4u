@@ -29,7 +29,7 @@ The PDF-to-Word page uploads a PDF to the separate Render-hosted FastAPI service
 3. Test the pages at desktop and mobile widths and with keyboard navigation.
 4. Test PDF conversion with a simple text PDF, a multi-page PDF, and a scanned/image-only PDF; confirm the API is awake and configured for the production domain.
 5. Check every internal link, canonical URL, sitemap URL, and favicon after deployment.
-6. Confirm the custom domain is configured in GitHub Pages and DNS before changing `CNAME`.
+6. Confirm the custom domain and redirects in Vercel before changing canonical URLs or sitemap entries.
 7. Add an `ads.txt` record and AdSense script only after the real publisher account ID and seller details are available. Do not use placeholder IDs.
 
 ## AdSense preparation
@@ -44,7 +44,7 @@ Useful official references:
 
 ## Important deployment notes
 
-- The canonical host used in page metadata and the sitemap is `https://freetools4u.xyz` (non-www).
-- The repository's `CNAME` file is currently empty. Verify the GitHub Pages custom-domain setting and DNS before writing a domain value into it.
+- The canonical host used in page metadata and the sitemap is `https://www.freetools4u.xyz` (www), matching the Vercel production domain. The apex domain redirects to www.
+- Production hosting and custom-domain routing are configured through Vercel. Keep canonical URLs, sitemap entries, and absolute internal links aligned with the Vercel production domain.
 - `ads.txt` is currently empty because no verified AdSense publisher ID was supplied. Populate it only with the exact seller record provided by the publisher account.
 - The Contact page is intentionally excluded from the sitemap and search indexing until verified contact details are provided.
